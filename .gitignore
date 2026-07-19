@@ -1,0 +1,4 @@
+.DS_Store
+.omc/*
+!.omc/plans/
+.claude/settings.local.json
