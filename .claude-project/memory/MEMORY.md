@@ -7,4 +7,5 @@
 - [omc-parallel-subagent-session-limit-recovery](omc-parallel-subagent-session-limit-recovery.md) — 병렬 subagent가 session limit에 걸리면 부분 산출물 회수 후 인라인 전환
 - [zero-dep-harness-approach](zero-dep-harness-approach.md) — zero-dep 프로젝트 하네스: eslint/knip/husky 대신 verify-docs + node 내장 coverage/CI
 - [safety-fixture-scan-self-block-gap](safety-fixture-scan-self-block-gap.md) — (해결) commit/deploy 스캔에 scan_path_skip 경로 예외 추가 (tests/fixtures/ 등)
+- [novice-safety-minimalism](novice-safety-minimalism.md) — 사용자 확정: 안전 게이트는 deny-only 최소 코어, ask 티어 금지, 애매하면 CC 네이티브 위임
 

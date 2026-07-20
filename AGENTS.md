@@ -11,7 +11,7 @@
 
 ## 기술 스택 (불변)
 - Node.js ESM (`"type":"module"`), Node >= 18, **외부 dependency 0** — npm 패키지 추가 금지.
-- 테스트: `node:test`. `npm test` = unit + integration (현재 149개). 부분: `npm run test:unit` / `test:integration`.
+- 테스트: `node:test`. `npm test` = unit + integration (현재 147개). 부분: `npm run test:unit` / `test:integration`.
 
 ## 아키텍처 한 줄
 config(데이터) ← lib(순수) ← hook 핸들러. 상세: [ARCHITECTURE.md](./ARCHITECTURE.md), 레이어 규칙: [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md).
