@@ -1,7 +1,7 @@
 ---
-created: 2026-07-21T02:05:00+09:00
+created: 2026-07-21T02:20:00+09:00
 project: novice
-summary: 안전 게이트 deny-only 최소코어 완성(리뷰·잔재정리 포함) — 코드 4커밋 push(4a9cf4b·b4e9d84·e413db8 + rev12 2d66049), 147 tests, PRD rev 12
+summary: 안전 게이트 deny-only 최소코어 완성 + v0.2.0 릴리스(Release Notes 신설·릴리스 규칙) — 147 tests, PRD rev 12, 전부 push(HEAD df07425)
 ---
 
 ## Session Digest
@@ -10,6 +10,7 @@ summary: 안전 게이트 deny-only 최소코어 완성(리뷰·잔재정리 포
 ## Progress
 - 완료: deny-only 코어 + 리뷰·잔재 정리 (147 tests, verify-docs OK, 전부 push)
 - 완료: `/novice` front door, PRD rev 12, fixture 경로 스캔 예외, novice off(이 프로젝트)
+- 완료: **v0.2.0 릴리스** — plugin.json bump, README `## Release Notes`(한/영) 신설, 릴리스 규칙 AGENTS.md 명문화(주요 버전 bump push 시 Release Notes 항목 필수, 이 프로젝트 한정)
 - 미완: 플러그인 재설치(사용자), product beta(사람 참가자), 실제 CLI 설치·로그인 E2E
 
 ## Next Steps
