@@ -78,6 +78,14 @@ for (const f of ['principles.md', 'maturity-framework.md', 'fix-catalog.md', 'gc
   ok(exists(path.join('docs', 'harness', f)), `docs/harness/${f} 누락`);
 }
 
+// 8) lib 레지스트리 일치: 실제 scripts/lib/*.js 모듈이 전부 ARCHITECTURE.md 모듈맵에 등재됐는지
+//    (Search Before Building — 레지스트리 drift 방지). *.mjs·helper 제외.
+const arch = read('ARCHITECTURE.md');
+for (const f of fs.readdirSync(path.join(root, 'scripts', 'lib')).filter((x) => x.endsWith('.js'))) {
+  const mod = f.replace(/\.js$/, '');
+  ok(arch.includes(`\`${mod}.js\``), `ARCHITECTURE.md lib 모듈맵에 scripts/lib/${f} 누락 (레지스트리 drift)`);
+}
+
 if (errors.length) {
   console.error('verify-docs FAILED:\n' + errors.map((e) => `  ✗ ${e}`).join('\n'));
   process.exit(1);

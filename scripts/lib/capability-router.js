@@ -20,10 +20,6 @@ export function loadCapabilities(env = process.env) {
   return cached;
 }
 
-export function _resetCaches() {
-  cached = null;
-}
-
 // ---- MCP candidate validation (two acceptance paths) ----
 //
 // candidate: what the runtime reports about an available MCP server plus the tools the model

@@ -1,39 +1,38 @@
 ---
-created: 2026-07-20T15:16:00+09:00
+created: 2026-07-20T19:00:00+09:00
 project: novice
-summary: novice 플러그인 전체 구현 완료 (PRD rev 9) — 테스트 123/123, 실측 2.1.215 검증, 커밋 ba4f137 push
+summary: novice 플러그인 구현 완료 (PRD rev 11) + 하네스 셋업/GC 완료 — 테스트 149/149, 성숙도 L4(76.75), 설치·활성화됨
 ---
 
 ## Session Digest
-docs/PRD.md rev 8을 Ralph 루프로 전 범위 구현하고 rev 9로 갱신했다. 학습 seam(용어 스캐폴딩·mode capsule·fade 카운터), 안전 gate(Bash·PowerShell 유한 grammar·secret scan·target 분류), 관찰층(event 집계·출력 redaction), 2-tier bootstrap engine을 모두 만들었다. architect 리뷰 APPROVE, 실제 Claude Code 2.1.215에서 hook payload 캡처 + `--plugin-dir` live E2E까지 검증. 초반 병렬 executor agent 4개가 session limit으로 죽어 부분 산출물만 회수하고 나머지는 인라인 구현했다. 코드 커밋 ba4f137로 push 완료.
+novice 플러그인을 PRD rev 8→11로 전 범위 구현하고 marketplace 등록·실제 설치까지 마쳤다. 이후 하네스 엔지니어링 셋업(AGENTS.md 맵·ARCHITECTURE·docs/harness·verify-docs)과 GC(3-에이전트 감사 + 회의적 채점)를 수행했다. rev 8→11 주요 변경: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터(정적 allowlist + 런타임 등록·명시 동의), CLI Tier 2 명시 동의, plaintext credential 정책(vercel 고지형/gh·supabase 중단형), latency 벤치·hook 순서 실측, plugin.json hooks 키 제거(중복 로드 버그 수정).
 
 ## Progress
-- 완료: PRD rev 9 전 범위 구현 (완료 기준 A~D 충족)
-- 완료: 테스트 123/123 (unit 8 + integration 3), 외부 dependency 0
-- 완료: 실측 2.1.215 hook payload 캡처 fixture + `/novice:mode` live E2E
-- 완료: blocking hook latency 실측 (UserPromptSubmit p95 39ms, PreToolUse p95 51ms)
-- 완료: PowerShell 전용 grammar, mutation 하네스(위험 35건 → mutant 106개, 우회 0)
-- 완료: 코드 커밋 ba4f137 origin/main push
-- 미완: product beta 검증 (concierge n≥5, moderated n≥20 — 사람 참가자 필요)
-- 미완: interactive 캡처 2건 (SessionStart clear/compact source, MCP destructive payload — headless 불가)
+- 완료: PRD rev 11 전 범위 구현, 테스트 149/149 (unit 11 + integration 4), 외부 dependency 0
+- 완료: marketplace 등록(.claude-plugin/marketplace.json), user scope 설치·활성화(novice@novice ✔ enabled)
+- 완료: 하네스 셋업(AGENTS.md 51줄 맵, ARCHITECTURE.md, docs/harness 5종, verify-docs.mjs pretest 연결, permissions.deny)
+- 완료: 하네스 GC — 문서 신선도 96%, 아키텍처 위반 0, 성숙도 L4(76.75), P8만 통과선 미달
+- 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(계정), MCP/clear/compact 실측 payload(headless 불가)
 
 ## Next Steps
-1. interactive 세션에서 `/clear`·compact·MCP destructive payload 캡처해 documented fixture 2건을 실측으로 교체
-2. product beta 준비 — concierge test(n≥5) 시나리오 설계, baseline Claude Code 관찰 프로토콜
-3. marketplace 배포 준비 검토 (plugin.json 메타, 배포 채널)
+1. 새 세션에서 실사용 스모크 테스트 (`/plugin` → novice enabled, `/novice:mode`, 용어 병기, 안전 게이트)
+2. P8 gap: zero-dep node:test CI(GitHub Actions) — 이번 GC에서 추가됨. 실제 push CI 동작 확인
+3. product beta 준비 (concierge n≥5, moderated n≥20)
+4. (선택) `/sh:harness-setup --infra`로 coverage/logger/husky — zero-dep 벗어나므로 명시 옵트인만
 
 ## Blockers
-- 없음 (beta는 사람 참가자가 필요할 뿐 기술 블록 아님)
+- 없음 (남은 항목은 사람·환경 필요, 기술 블록 아님)
 
 ## Watch Out
-- plugin.json `userConfig` 각 항목에 `title` 필수 (2.1.215 스키마 — 없으면 플러그인 로드 실패, `claude plugins validate`로 확인)
-- `PostToolBatch` payload는 `tool_calls[]` (문서 추정 `batch[]` 아님); `UserPromptExpansion.command_source`는 `"plugin"`
-- contract fixture는 `provenance` 필드로 captured/derived/documented 구분 — documented 2건은 실측 교체 대상
-- credential 정책: vercel은 고지형(파일 저장이 공식 기본), gh·supabase는 중단형(secure storage 전제) — manifest `abort_auto_login_on_plaintext`가 결정
-- tests/fixtures·test의 토큰(ghp_/AKIA 등)은 전부 synthetic fixture — 실제 secret 아님
+- **zero external dependency** 원칙 — eslint/knip/husky 도입 금지. 레이어 강제는 scripts/verify-docs.mjs.
+- plugin.json에 `hooks` 키 넣지 말 것 (hooks/hooks.json 자동 로드 — 중복 로드 실패).
+- userConfig 항목에 `title` 필수. marketplace name엔 슬래시 불가(설치는 `install novice`).
+- mute=프로젝트 스코프(교차 세션), reset·용어 카운터=세션 스코프.
+- MCP 허용 = 정적 allowlist(비어 있음) 또는 런타임 등록+명시 동의. 자동 설치 안 함, PreToolUse가 계속 가드.
+- 안전 hook fail-closed / 학습 hook fail-open. credential 값 미취급. state는 CLAUDE_PLUGIN_DATA만.
+- tests/fixtures의 토큰(ghp_/AKIA)은 전부 synthetic.
 
 ## Files Touched
-- `.claude-plugin/plugin.json`, `hooks/hooks.json`, `package.json`, `README.md`, `CLAUDE.md`(신규)
-- `scripts/` (9 hook handlers + `lib/` 6 모듈), `config/` (5 JSON + manifest 3)
-- `skills/mode`, `skills/setup-service`
-- `tests/` (unit 8 + integration 3 + fixtures + helpers), `docs/PRD.md` (rev 9)
+- 코드: scripts/(hook 10 + lib 8 + bootstrap-engine + verify-docs), config/(5 JSON + manifest 3), hooks/hooks.json
+- 문서: AGENTS.md, ARCHITECTURE.md, CLAUDE.md(@AGENTS.md), README.md(한/영), docs/(PRD rev11, harness 5, QUALITY, design-docs 2, tech-debt), .claude-project/(HANDOFF, memory)
+- 플러그인: .claude-plugin/(plugin.json, marketplace.json), .claude/settings.json(permissions.deny)
