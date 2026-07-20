@@ -12,6 +12,7 @@
 ## 기술 스택 (불변)
 - Node.js ESM (`"type":"module"`), Node >= 18, **외부 dependency 0** — npm 패키지 추가 금지.
 - 테스트: `node:test`. `npm test` = unit + integration (현재 147개). 부분: `npm run test:unit` / `test:integration`.
+- 릴리스 (이 프로젝트 규칙): 버전은 `.claude-plugin/plugin.json`. **주요 버전(minor 이상) bump를 push할 때 README `## Release Notes`(한/영)에 항목을 추가**하고 bump와 같은 커밋으로 묶는다.
 
 ## 아키텍처 한 줄
 config(데이터) ← lib(순수) ← hook 핸들러. 상세: [ARCHITECTURE.md](./ARCHITECTURE.md), 레이어 규칙: [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md).
