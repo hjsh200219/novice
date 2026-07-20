@@ -2,8 +2,8 @@
 status: implemented (MVP) — product beta 미검증
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-20
-revision: 9
-mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화 (사용자 확정 2026-07-20)
+revision: 10
+mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프) 추가, MCP·Chrome capability 라우터 구현, latency 벤치·hook 순서 실측 (사용자 결정 2026-07-20)
 implementation: 완료 기준 A~D 충족, 테스트 145/145 통과 (unit 11 + integration 4, 외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
@@ -464,7 +464,7 @@ novice/
 
 ### P1/P2 후보
 
-- P1: 교차 세션 용어 학습, statusline nudge, 비용 preview, 안전 core 분리 플러그인 실험, 추가 OAuth provider.
+- P1: 교차 세션 용어 학습(자동 fade의 세션 간 누적 — 단 명시적 `novice mute`는 rev 10에서 교차 세션 구현됨), statusline nudge, 비용 preview, 안전 core 분리 플러그인 실험, 추가 OAuth provider.
 - P2: spaced repetition, 오개념 추적, 예제 discovery, 장기 학습 진도.
 
 ## 7. 리스크와 완화
@@ -509,6 +509,8 @@ novice/
 - hook 구현 언어는 Node.js로 통일한다. JSON schema, 안전한 file I/O, Windows 호환성을 한 언어로 테스트한다.
 - 초기 용어 사전은 32개로 시작한다: Git 8, terminal/filesystem 6, web/app 6, database/auth 6, deploy/security 6.
 - fade 기본값은 Level 1 설명 3회, Level 2 설명 3회, Level 3 자동 설명 0회다(사용자 결정 2026-07-20, Level 2를 1회→3회로 변경). 용어별 `novice mute`는 이 카운터와 무관하게 즉시 영구 제외한다.
+- `novice mute`/`unmute`는 프로젝트 override(`projects/<hash>.json`의 `muted_terms`)에 저장해 **교차 세션 지속**한다(사용자 결정 2026-07-20). reset·용어 카운터는 세션 스코프로 유지한다.
+- MCP·Chrome 경로는 `capability-router`로 구현한다(경로 결정·allowlist/provenance 검증·다운그레이드·plan 생성까지). 플러그인은 MCP 서버 spawn·tool 호출·Chrome 조작을 하지 않고, 기본 `mcp_allowlist`는 비어 있어 자동 실행이 0이다.
 - project key는 Git repository이면 canonical top-level path, 아니면 symlink를 해소한 canonical cwd의 SHA-256으로 만든다.
 - Chrome을 사용할 수 없는 환경도 MVP 대상에 포함하되 guided manual로 downgrade한다.
 - 안전 gate의 사용자 승인은 tool call 1회로 제한하고 session-scoped approval은 제공하지 않는다.

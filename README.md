@@ -6,7 +6,7 @@
 외부 서비스 CLI 설정을 안전한 범위에서 돕고, CLI 공포와 파괴·비용·시크릿 노출 위험을 줄이는
 3단계 학습 동반자 플러그인입니다.
 
-- 스펙: `docs/PRD.md` (revision 9)
+- 스펙: `docs/PRD.md` (revision 10)
 - 최소 지원 런타임: Claude Code `2.1.215`
 - 상태: MVP 구현 완료 — 테스트 145개 통과 (unit 11 + integration 4, 외부 dependency 0).
   실제 2.1.215 runtime에서 hook payload 캡처 + `--plugin-dir` live E2E 검증 완료.
@@ -107,8 +107,11 @@ PreToolUse ≤250ms)을 회귀 테스트로 강제합니다(`NOVICE_BENCH_ITERS`
 `tests/fixtures/contract/`의 hook payload fixture는 Claude Code **2.1.215 실측 캡처**입니다
 (provenance 필드로 캡처/파생/문서 구분 — 상세는 해당 디렉토리 README).
 플러그인 자체도 같은 runtime에 `--plugin-dir`로 로드해 `/novice:mode` expansion →
-상태 갱신 → capsule 주입까지 live E2E로 확인했습니다. 남은 미실측: `/clear`·compact의
-SessionStart source 값, MCP destructive payload (headless로 트리거 불가).
+상태 갱신 → capsule 주입까지 live E2E로 확인했고, hook 실행 순서(expansion→submit)도 실측했습니다.
+
+코드로 검증 불가라 남는 항목: 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요),
+`/clear`·compact의 SessionStart source·MCP destructive payload 실측(headless 트리거 불가),
+product beta 지표(사람 참가자 필요).
 
 ---
 
@@ -123,7 +126,7 @@ It preserves real development terminology and learning opportunities, helps set 
 service CLIs within a safe boundary, and reduces the fear of the CLI along with the risk of
 destructive commands, runaway cost, and secret exposure.
 
-- Spec: `docs/PRD.md` (revision 9)
+- Spec: `docs/PRD.md` (revision 10)
 - Minimum supported runtime: Claude Code `2.1.215`
 - Status: MVP implemented — 145 tests passing (11 unit + 4 integration, zero external
   dependencies). Verified against a real 2.1.215 runtime via hook-payload capture and a
@@ -235,6 +238,10 @@ budget (UserPromptSubmit ≤300ms, PreToolUse ≤250ms) as a regression test (tu
 The hook-payload fixtures in `tests/fixtures/contract/` are **real Claude Code 2.1.215
 captures** (the `provenance` field distinguishes captured/derived/documented — see that
 directory's README). The plugin itself was also loaded on the same runtime via `--plugin-dir`
-and confirmed end to end: `/novice:mode` expansion → state update → capsule injection. Still
-uncaptured: the SessionStart source for `/clear`/compact and the MCP destructive payload
-(cannot be triggered headlessly).
+and confirmed end to end: `/novice:mode` expansion → state update → capsule injection, and the
+hook execution order (expansion→submit) was captured too.
+
+What cannot be verified in code (documented as such): real CLI install/login E2E (needs the
+user's environment and accounts), real captures of the `/clear`/compact SessionStart source and
+the MCP destructive payload (cannot be triggered headlessly), and the product-beta metrics
+(need human participants).
