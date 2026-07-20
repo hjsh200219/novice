@@ -156,5 +156,6 @@
       "(?i)(?:example|sample|dummy|placeholder|fixture|fake)"
     ]
   },
-  "scan_file_extensions_skip": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".mp4", ".mp3", ".woff", ".woff2", ".ttf", ".eot"]
+  "scan_file_extensions_skip": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".mp4", ".mp3", ".woff", ".woff2", ".ttf", ".eot"],
+  "scan_path_skip": ["tests/fixtures/", "test/fixtures/", "__fixtures__/"]
 }

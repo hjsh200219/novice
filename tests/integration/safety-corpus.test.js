@@ -149,6 +149,23 @@ test('benign staged content commits freely; unborn HEAD is delegated (no opinion
   assert.equal(decisionOf(r), null, 'unborn HEAD is delegated, never blocked');
 });
 
+test('fixture-path files are excluded from the commit secret scan; non-fixture secrets still deny', async () => {
+  const dataDir = makeDataDir();
+  const cwd = makeRepo();
+  // Intentional synthetic secret under tests/fixtures/ — the plugin must be able to commit its own corpus.
+  fs.mkdirSync(path.join(cwd, 'tests', 'fixtures', 'safety'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'tests', 'fixtures', 'safety', 'corpus.json'), `{"cmd":"echo ${GHP}"}\n`);
+  execFileSync('git', ['-C', cwd, 'add', 'tests/fixtures/safety/corpus.json']);
+  const skipped = await commitScan(cwd, dataDir, 'git commit -m "add fixture"');
+  assert.equal(decisionOf(skipped), null, 'fixture-path file is not scanned');
+
+  // Same token outside a fixture path still blocks (regression guard).
+  fs.writeFileSync(path.join(cwd, 'leak.txt'), `token=${GHP}\n`);
+  execFileSync('git', ['-C', cwd, 'add', 'leak.txt']);
+  const denied = await commitScan(cwd, dataDir, 'git commit -m "leak"');
+  assert.equal(decisionOf(denied).decision, 'deny', 'non-fixture secret still blocked');
+});
+
 test('oversized command is denied with split guidance; unscannable staged file is delegated', async () => {
   const dataDir = makeDataDir();
   const cwd = makeRepo();

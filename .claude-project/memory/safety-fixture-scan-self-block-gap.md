@@ -1,9 +1,13 @@
 ---
 name: safety-fixture-scan-self-block-gap
-description: novice commit secret 스캐너가 repo 자체 test fixture(synthetic 토큰)를 deny로 오탐 — scan-skip에 경로 예외 없음
+description: (해결됨) novice commit secret 스캐너가 repo 자체 fixture를 deny 오탐하던 갭 — scan_path_skip 경로 예외로 수정
 type: project
 created: 2026-07-21
 ---
+
+> **해결 (2026-07-21):** `safety-rules.json`에 `scan_path_skip`(`tests/fixtures/`·`test/fixtures/`·`__fixtures__/`)
+> 추가, `safety.js`의 `isScanSkippedPath`가 commit·deploy 스캔에서 해당 경로를 제외한다. 아래는 배경 기록.
+
 
 commit 안전 게이트(`scripts/lib/safety.js` checkGitCommit)는 staged 파일 전체 내용을
 `scanText`로 스캔한다. `scan_file_extensions_skip`은 확장자 기반(.png/.pdf/.woff 등)만

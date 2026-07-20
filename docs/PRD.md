@@ -286,7 +286,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 - 안전 hook의 JSON 오류·내부 예외·입력 상한 초과는 exit 2/deny로 처리한다(fail closed). 파싱 불가한 문법은 deny하지 않고 위임한다. 플랫폼이 timeout·강제 종료를 non-blocking으로 처리하는 경우는 제품 보증 범위에서 제외한다.
 - 고정 패턴 목록, protected branch 목록, secret fixture와 benign fixture를 version 관리한다.
 - MVP secret detector는 `safety-rules.json`의 고정 패턴과 entropy 보조 규칙으로 구현하며 새 외부 dependency를 추가하지 않는다. 후보 바이트는 process memory에서만 검사하고 원문을 stdout/stderr/state/metric에 남기지 않는다. 전문 secret scanner 연동은 P1 후보로 둔다.
-- commit 시 시크릿 스캔은 지원하는 commit 문법별 candidate tree를 계산한다. 일반 commit은 index, `-a`는 tracked worktree, pathspec commit은 resolved pathspec만 검사한다. 시크릿 값이 발견되면 deny한다. unborn HEAD·binary·복잡한 옵션·대용량 등 스캔할 수 없는 경우는 차단하지 않고 위임한다(긍정 탐지 시에만 deny). 무조건 `git diff HEAD`를 전체 스캔하는 방식은 사용하지 않는다.
+- commit 시 시크릿 스캔은 지원하는 commit 문법별 candidate tree를 계산한다. 일반 commit은 index, `-a`는 tracked worktree, pathspec commit은 resolved pathspec만 검사한다. `scan_path_skip`(예: `tests/fixtures/`) 경로의 파일은 의도적 synthetic 시크릿을 담는 corpus이므로 스캔에서 제외한다(플러그인이 자기 fixture를 커밋할 수 있도록). 시크릿 값이 발견되면 deny한다. unborn HEAD·binary·복잡한 옵션·대용량 등 스캔할 수 없는 경우는 차단하지 않고 위임한다(긍정 탐지 시에만 deny). 무조건 `git diff HEAD`를 전체 스캔하는 방식은 사용하지 않는다.
 - `PreToolUse` sibling hooks는 함께 실행될 수 있으므로 다른 hook의 deny가 side effect hook 실행을 막는다고 가정하지 않는다.
 - novice off에서도 위 정책은 유지된다. 플러그인을 disable/uninstall하면 유지되지 않는다.
 

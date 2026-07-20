@@ -82,6 +82,16 @@ function safeRealpath(p) {
   }
 }
 
+// Files under a configured fixture path (e.g. tests/fixtures/) carry intentional synthetic
+// secrets for the corpus, so they are excluded from the secret scan — otherwise the plugin
+// would deny commits of its own test data. Path-anchored on segment boundaries.
+function isScanSkippedPath(file, rules) {
+  const prefixes = rules.scan_path_skip;
+  if (!Array.isArray(prefixes) || prefixes.length === 0) return false;
+  const norm = '/' + String(file).replace(/\\/g, '/').replace(/^\.?\/+/, '');
+  return prefixes.some((p) => norm.includes('/' + String(p).replace(/^\/+/, '')));
+}
+
 // ---- rm: deny only when the target is home / root / project root / parent / '*' ----
 
 function checkRm(argv, cwd) {
@@ -203,6 +213,7 @@ function checkGitCommit(parsed, cwd, rules) {
     let total = 0;
     for (const f of files) {
       if (skipExt.has(path.extname(f).toLowerCase())) continue;
+      if (isScanSkippedPath(f, rules)) continue;
       const r = readContent(f);
       if (r == null) continue;
       total += Buffer.byteLength(r.content, 'utf8');
@@ -257,6 +268,7 @@ function checkDeployCli(svc, argv, cwd, rules) {
 }
 
 function scanEnvFileArg(fileArg, cwd, rules) {
+  if (isScanSkippedPath(fileArg, rules)) return null;
   try {
     const abs = path.resolve(cwd, fileArg);
     const st = fs.statSync(abs);

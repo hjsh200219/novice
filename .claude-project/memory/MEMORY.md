@@ -6,5 +6,5 @@
 - [bootstrap-credential-policy-per-provider](bootstrap-credential-policy-per-provider.md) — 부트스트랩 plaintext 로그인 정책은 provider별 manifest(고지형 vercel vs 중단형 gh/supabase)
 - [omc-parallel-subagent-session-limit-recovery](omc-parallel-subagent-session-limit-recovery.md) — 병렬 subagent가 session limit에 걸리면 부분 산출물 회수 후 인라인 전환
 - [zero-dep-harness-approach](zero-dep-harness-approach.md) — zero-dep 프로젝트 하네스: eslint/knip/husky 대신 verify-docs + node 내장 coverage/CI
-- [safety-fixture-scan-self-block-gap](safety-fixture-scan-self-block-gap.md) — commit 스캐너가 repo 자체 fixture의 synthetic 토큰을 deny 오탐 (경로 예외 없음)
+- [safety-fixture-scan-self-block-gap](safety-fixture-scan-self-block-gap.md) — (해결) commit/deploy 스캔에 scan_path_skip 경로 예외 추가 (tests/fixtures/ 등)
 
