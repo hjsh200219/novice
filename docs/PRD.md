@@ -1,10 +1,10 @@
 ---
 status: implemented (MVP) — product beta 미검증
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
-date: 2026-07-20
-revision: 11
-mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20)
-implementation: 완료 기준 A~D 충족, 테스트 149/149 통과 (unit 11 + integration 4, 외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
+date: 2026-07-21
+revision: 12
+mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20); rev 12 — 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 전면 제거 → benign 미지원문법 false-prompt 해소, 파싱 불가·모호는 CC 네이티브 위임), /novice front door 스킬 추가 (사용자 결정 2026-07-21)
+implementation: 완료 기준 A~D 충족, 테스트 148/148 통과 (외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
 ---

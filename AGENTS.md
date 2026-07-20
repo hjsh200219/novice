@@ -1,7 +1,7 @@
 # novice — 에이전트 진입 맵
 
 비개발자 입문자용 Claude Code 학습 동반자 플러그인. 실제 개발 용어 보존 + 안전 게이트 +
-외부 서비스 CLI 부트스트랩. 제품 스펙 SSOT는 [docs/PRD.md](./docs/PRD.md) (revision 11).
+외부 서비스 CLI 부트스트랩. 제품 스펙 SSOT는 [docs/PRD.md](./docs/PRD.md) (revision 12).
 
 > 이 문서는 handbook이 아니라 **map**이다. 상세는 각 링크의 하위 문서에 있다.
 

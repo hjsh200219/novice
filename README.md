@@ -6,7 +6,7 @@
 외부 서비스 CLI 설정을 안전한 범위에서 돕고, CLI 공포와 파괴·비용·시크릿 노출 위험을 줄이는
 3단계 학습 동반자 플러그인입니다.
 
-- 스펙: `docs/PRD.md` (revision 11)
+- 스펙: `docs/PRD.md` (revision 12)
 - 최소 지원 런타임: Claude Code `2.1.215`
 - 상태: MVP 구현 완료 — 테스트 149개 통과 (unit 11 + integration 4, 외부 dependency 0).
   실제 2.1.215 runtime에서 hook payload 캡처 + `--plugin-dir` live E2E 검증 완료.
@@ -148,7 +148,7 @@ It preserves real development terminology and learning opportunities, helps set 
 service CLIs within a safe boundary, and reduces the fear of the CLI along with the risk of
 destructive commands, runaway cost, and secret exposure.
 
-- Spec: `docs/PRD.md` (revision 11)
+- Spec: `docs/PRD.md` (revision 12)
 - Minimum supported runtime: Claude Code `2.1.215`
 - Status: MVP implemented — 149 tests passing (11 unit + 4 integration, zero external
   dependencies). Verified against a real 2.1.215 runtime via hook-payload capture and a
