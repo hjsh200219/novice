@@ -8,7 +8,7 @@
 
 - 스펙: `docs/PRD.md` (revision 9)
 - 최소 지원 런타임: Claude Code `2.1.215`
-- 상태: MVP 구현 완료 — 테스트 123개 통과 (unit 8 + integration 3, 외부 dependency 0).
+- 상태: MVP 구현 완료 — 테스트 145개 통과 (unit 11 + integration 4, 외부 dependency 0).
   실제 2.1.215 runtime에서 hook payload 캡처 + `--plugin-dir` live E2E 검증 완료.
   남은 것은 사람 참가자가 필요한 product beta 검증(concierge/moderated).
 
@@ -97,10 +97,12 @@ npm run test:unit
 npm run test:integration
 ```
 
-외부 runtime dependency 없음 (Node >= 18, node:test). 테스트 구성: unit 8개 파일
-(config·state·mode·capsule·stop·grammar·secrets·batch·bootstrap), integration 3개 파일
-(hooks-contract·safety-corpus·safety-mutation). 안전 gate는 mutation 하네스로도 검증합니다
-— 위험 명령 35건을 106개 mutant로 변형해 detector 우회가 없음을 확인합니다.
+외부 runtime dependency 없음 (Node >= 18, node:test). 테스트 구성: unit 11개 파일
+(config·state·mode·capsule·stop·grammar·secrets·batch·bootstrap·capability-router·output-style),
+integration 4개 파일 (hooks-contract·safety-corpus·safety-mutation·latency-benchmark).
+안전 gate는 mutation 하네스로도 검증합니다 — 위험 명령 35건을 106개 mutant로 변형해 detector
+우회가 없음을 확인합니다. latency 벤치는 blocking hook의 p95 예산(UserPromptSubmit ≤300ms,
+PreToolUse ≤250ms)을 회귀 테스트로 강제합니다(`NOVICE_BENCH_ITERS`로 반복 횟수 조정).
 
 `tests/fixtures/contract/`의 hook payload fixture는 Claude Code **2.1.215 실측 캡처**입니다
 (provenance 필드로 캡처/파생/문서 구분 — 상세는 해당 디렉토리 README).
@@ -123,7 +125,7 @@ destructive commands, runaway cost, and secret exposure.
 
 - Spec: `docs/PRD.md` (revision 9)
 - Minimum supported runtime: Claude Code `2.1.215`
-- Status: MVP implemented — 123 tests passing (8 unit + 3 integration, zero external
+- Status: MVP implemented — 145 tests passing (11 unit + 4 integration, zero external
   dependencies). Verified against a real 2.1.215 runtime via hook-payload capture and a
   `--plugin-dir` live E2E. What remains is the product beta, which needs human participants.
 
@@ -222,11 +224,13 @@ npm run test:unit
 npm run test:integration
 ```
 
-No external runtime dependencies (Node >= 18, node:test). Test layout: 8 unit files
-(config·state·mode·capsule·stop·grammar·secrets·batch·bootstrap), 3 integration files
-(hooks-contract·safety-corpus·safety-mutation). The safety gate is also checked by a mutation
-harness — it mutates 35 dangerous commands into 106 mutants and confirms the detector is never
-bypassed.
+No external runtime dependencies (Node >= 18, node:test). Test layout: 11 unit files
+(config·state·mode·capsule·stop·grammar·secrets·batch·bootstrap·capability-router·output-style),
+4 integration files (hooks-contract·safety-corpus·safety-mutation·latency-benchmark). The safety
+gate is also checked by a mutation harness — it mutates 35 dangerous commands into 106 mutants
+and confirms the detector is never bypassed. The latency benchmark enforces the blocking-hook p95
+budget (UserPromptSubmit ≤300ms, PreToolUse ≤250ms) as a regression test (tune iterations with
+`NOVICE_BENCH_ITERS`).
 
 The hook-payload fixtures in `tests/fixtures/contract/` are **real Claude Code 2.1.215
 captures** (the `provenance` field distinguishes captured/derived/documented — see that

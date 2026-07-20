@@ -23,6 +23,7 @@ hook payload다. 캡처 방법: capture 전용 프로젝트에 stdin 덤프 hook
 - `UserPromptExpansion.command_source`는 `"plugin"` (plugin 이름이 아니라 종류).
 - plugin `userConfig` 항목에는 `title`이 필수다 (`claude plugins validate`).
 - `--plugin-dir` 로드 시 `CLAUDE_PLUGIN_DATA`는 `~/.claude/plugins/data/<plugin>/`로 제공됨 (E2E 확인).
+- **hook 실행 순서**: 정확한 slash 명령에서 `UserPromptExpansion`이 `UserPromptSubmit`보다 **먼저** 실행된다 (`hook-order-slash.json`, 실측). novice contract는 순서 독립적이라 반대여도 동작이 동일하다.
 
 ## 남은 documented 항목
 

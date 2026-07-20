@@ -22,13 +22,18 @@ function freshCwd() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'novice-contract-'));
 }
 
-test('every contract fixture is valid JSON with the common fields', () => {
+test('every contract fixture is valid JSON; payload fixtures carry the common fields', () => {
   const files = fs.readdirSync(contractDir).filter((f) => f.endsWith('.json'));
   assert.ok(files.length >= 15);
   for (const f of files) {
     const p = JSON.parse(fs.readFileSync(path.join(contractDir, f), 'utf8'));
-    for (const field of ['session_id', 'cwd', 'hook_event_name', 'provenance']) {
-      assert.ok(field in p, `${f} missing ${field}`);
+    assert.ok('provenance' in p, `${f} missing provenance`);
+    // Payload fixtures (a hook stdin shape) carry the common fields; meta fixtures
+    // (e.g. hook-order-slash.json) describe a contract and are exempt.
+    if ('hook_event_name' in p) {
+      for (const field of ['session_id', 'cwd']) {
+        assert.ok(field in p, `${f} missing ${field}`);
+      }
     }
   }
 });
@@ -130,6 +135,39 @@ test('SessionEnd contract: clear deletes session state', async () => {
   assert.ok(readSessionState(dataDir, sid));
   await runHook('session-end.js', fixture('session-end-clear'), { dataDir });
   assert.equal(readSessionState(dataDir, sid), null);
+});
+
+test('captured 2.1.215 hook order: expansion before submit, and the contract is order-independent', async () => {
+  const order = JSON.parse(fs.readFileSync(path.join(contractDir, 'hook-order-slash.json'), 'utf8'));
+  // Documented real order captured on 2.1.215.
+  assert.equal(order.provenance, 'captured-2.1.215');
+  assert.deepEqual(order.order, ['UserPromptExpansion', 'UserPromptSubmit']);
+
+  // Replay the two hooks in the CAPTURED order and assert the contract holds:
+  // submit skips the slash prompt (no injection), expansion owns the single injection.
+  const dataDir = makeDataDir();
+  const cwd = freshCwd();
+  const sid = 'order-session';
+  const slash = order.prompt;
+
+  const exp = await runHook('user-prompt-expansion.js', {
+    session_id: sid, cwd, hook_event_name: 'UserPromptExpansion',
+    command_name: 'novice:mode', command_args: '2', command_source: 'plugin', prompt: slash,
+  }, { dataDir });
+  const sub = await runHook('user-prompt-submit.js', { session_id: sid, cwd, hook_event_name: 'UserPromptSubmit', prompt: slash }, { dataDir });
+
+  assert.ok(additionalContextOf(exp)?.includes('level:2'), 'expansion injects the capsule');
+  assert.equal(sub.output, null, 'submit skips the slash prompt (no second injection)');
+
+  // Reverse order → same contract (submit still skips, expansion still the sole injector).
+  const dataDir2 = makeDataDir();
+  const sub2 = await runHook('user-prompt-submit.js', { session_id: sid, cwd, hook_event_name: 'UserPromptSubmit', prompt: slash }, { dataDir: dataDir2 });
+  const exp2 = await runHook('user-prompt-expansion.js', {
+    session_id: sid, cwd, hook_event_name: 'UserPromptExpansion',
+    command_name: 'novice:mode', command_args: '2', command_source: 'plugin', prompt: slash,
+  }, { dataDir: dataDir2 });
+  assert.equal(sub2.output, null, 'submit skips regardless of order');
+  assert.ok(additionalContextOf(exp2)?.includes('level:2'), 'expansion injects regardless of order');
 });
 
 test('state stays under CLAUDE_PLUGIN_DATA — plugin root untouched', async () => {

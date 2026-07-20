@@ -4,7 +4,7 @@ title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-20
 revision: 9
 mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화 (사용자 확정 2026-07-20)
-implementation: 완료 기준 A~D 충족, 테스트 123/123 통과 (unit 8 + integration 3, 외부 dependency 0). 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 커밋 ba4f137(코드)·b8cfec7(handoff). 잔여: product beta(사람 참가자), interactive 캡처 2건(SessionStart clear/compact source·MCP destructive payload)
+implementation: 완료 기준 A~D 충족, 테스트 145/145 통과 (unit 11 + integration 4, 외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -394,7 +394,7 @@ novice/
 
 > 구현은 단계를 나누지 않고 **전체 기능을 한 번에 개발**한다(사용자 결정, revision 5). 아래 완료 기준은 순차 gate가 아니라 배포 판정용 단일 체크리스트이며 영역별로 묶었을 뿐이다. 단, 플랫폼 contract fixture 캡처(A)는 나머지 구현의 전제이므로 착수 직후 가장 먼저 수행한다.
 
-> **구현 상태 (2026-07-20):** 완료 기준 A~D 전 항목 구현·통과. 테스트 123/123 (unit 8 + integration 3, 외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0. contract fixture는 실측 Claude Code 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) SessionStart `clear`/`compact` source·MCP destructive payload는 headless 캡처 불가라 documented 상태로 남김(fixture `provenance` 필드로 구분).
+> **구현 상태 (2026-07-20):** 완료 기준 A~D 전 항목 구현·통과. 테스트 145/145 (unit 11 + integration 4, 외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
 
 **산출물 (일괄)**
 
@@ -405,11 +405,11 @@ novice/
 
 - plugin skill이 `/novice:mode` namespace로 노출된다.
 - Claude Code 2.1.215에서 `UserPromptExpansion`의 `expansion_type`, `command_name`, `command_args`, `command_source`, `prompt` payload fixture를 캡처한다. `command_name=novice:mode`를 매칭하고 valid args만 state에 반영한다.
-- `UserPromptSubmit`과 `UserPromptExpansion`의 실제 순서를 캡처하고, exact slash prompt에서 submit hook은 old capsule을 생략하며 expansion hook만 새 capsule/tombstone을 주입함을 검증한다.
+- `UserPromptSubmit`과 `UserPromptExpansion`의 실제 순서를 캡처하고(`hook-order-slash.json`: 2.1.215에서 expansion→submit), exact slash prompt에서 submit hook은 old capsule을 생략하며 expansion hook만 새 capsule/tombstone을 주입함을 검증한다. 순서를 뒤집어도 contract가 유지됨을 함께 검증한다(order-independent).
 - invalid args는 state를 변경하지 않고 `decision: block`과 허용 값 안내를 반환해 expansion 자체가 모델에 도달하지 않음을 검증한다.
 - `PostToolBatch`가 병렬 batch마다 한 번 호출되고, `PostToolUse.updatedToolOutput`이 Bash와 MCP output을 모델 전달 전에 대체함을 runtime fixture로 검증한다.
 - `SessionStart(source=compact)`가 현재 state를 다시 주입한다.
-- novice mode on/off와 plugin enable/disable 모든 경로에서 사용자 output style 설정이 변경되지 않는다.
+- novice mode on/off와 plugin enable/disable 모든 경로에서 사용자 output style 설정이 변경되지 않는다(정적: 소스에 output-style 참조 0건, 동적: 어느 hook 출력에도 output-style 필드 미포함 — `tests/unit/output-style.test.js`).
 - `${CLAUDE_PLUGIN_DATA}`에 project/session state가 생성되고 plugin root에는 쓰지 않는다.
 
 ### 완료 기준 B — mode·용어 core

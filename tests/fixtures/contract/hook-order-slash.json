@@ -1,0 +1,8 @@
+{
+  "provenance": "captured-2.1.215",
+  "runtime": "Claude Code 2.1.215",
+  "captured_at": "2026-07-20",
+  "prompt": "/novice:mode 2",
+  "order": ["UserPromptExpansion", "UserPromptSubmit"],
+  "note": "실측: 정확한 slash 명령에서 UserPromptExpansion이 UserPromptSubmit보다 먼저 실행된다. novice contract는 순서 독립적이다 — UserPromptSubmit은 SLASH_MODE 정규식으로 slash prompt를 감지해 아무것도 주입하지 않고(skip), UserPromptExpansion만 새 capsule/tombstone을 주입한다. 따라서 실행 순서가 반대여도 old/new capsule이 같은 turn에 공존하지 않는다."
+}
