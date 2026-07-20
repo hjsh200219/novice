@@ -1,0 +1,13 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "d1962f89-ea63-4200-9da0-db3a013d87cf",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "last_assistant_message": "commit(현재 변경을 하나의 저장 지점으로 기록하는 것)을 만들었어요.",
+  "background_tasks": [],
+  "session_crons": [],
+  "provenance": "derived-from-capture-2.1.215"
+}

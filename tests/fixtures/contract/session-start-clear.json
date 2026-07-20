@@ -1,0 +1,8 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "hook_event_name": "SessionStart",
+  "source": "clear",
+  "provenance": "derived-from-capture-2.1.215"
+}

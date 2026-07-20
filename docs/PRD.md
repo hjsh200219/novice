@@ -2,8 +2,8 @@
 status: pending approval
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-20
-revision: 8
-mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음)
+revision: 9
+mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화 (사용자 확정 2026-07-20)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -53,7 +53,7 @@ reviewers: [architect, critic]
 - **State seam:** 기계가 읽는 JSON을 SSOT로 사용한다. Markdown `SKILL.md`를 런타임 파싱하지 않는다.
 - **Compaction:** `SessionStart(source=compact)`에서 현재 mode capsule을 다시 주입한다.
 - **Off:** novice off 전환 turn에는 300자 이하 OFF tombstone을 한 번 주입해 과거 NOVICE_STATE·NOVICE_GLOSSARY를 무효화한다. 이후 turn부터 novice context를 새로 주입하지 않는다. 과거 transcript 자체는 삭제할 수 없으므로 같은 session의 출력이 fresh baseline과 완전히 같다고 보증하지 않는다.
-- **Secret seam:** 플러그인은 credential 값을 요청·보관·전달·자동입력하지 않는다. 로컬 scanner는 commit/deploy 차단을 위해 후보 파일·인자를 메모리에서 읽되 원문을 로그·state·metric에 남기지 않는다. provider CLI가 저장하는 인증 정보는 manifest의 credential-store 정책으로 별도 검증하며 plaintext fallback이면 자동 로그인을 중단한다.
+- **Secret seam:** 플러그인은 credential 값을 요청·보관·전달·자동입력하지 않는다. 로컬 scanner는 commit/deploy 차단을 위해 후보 파일·인자를 메모리에서 읽되 원문을 로그·state·metric에 남기지 않는다. provider CLI가 저장하는 인증 정보는 manifest의 credential-store 정책으로 별도 검증한다. secure storage를 전제하는 CLI(gh·Supabase)가 plaintext fallback으로 낮아지는 환경에서는 자동 로그인을 중단하고, 파일 저장이 공식 기본 동작인 CLI(Vercel)는 저장 위치·logout 경로를 승인 전에 고지한 뒤에만 로그인을 진행한다. 중단 여부는 manifest의 `credential_store.abort_auto_login_on_plaintext` 필드가 결정한다.
 - **External bootstrap seam:** `setup-service` skill이 manifest-driven `resolve → preflight → plan → approve → apply → verify → recover` 흐름을 소유한다. `PreToolUse`는 실행 직전 안전 gate, `PostToolUse`는 출력 redaction과 결과 관찰, `PostToolBatch`는 batch 단위 개입을 담당한다. 그 이후 provisioning은 자동 실행하지 않는다.
 - **Plugin disabled:** 사용자가 플러그인 자체를 disable/uninstall하면 `PreToolUse`를 포함한 모든 안전 게이트도 사라진다. “always-on”은 플러그인이 활성화된 동안만 의미한다.
 
@@ -245,7 +245,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 3. 미인증이면 credential 저장 정책과 `vercel logout` 복구 경로를 보여 주고 승인 후 `vercel login`을 실행한다. 사용자가 인증을 완료한 뒤 `vercel whoami`로 확인한다.
 4. 중간 실패 시 완료 단계와 잔여 상태를 보고하고 자동 삭제·logout하지 않는다. 재실행 시 완료된 설치·로그인 단계를 건너뛴다.
 5. 이후 project 생성·env 설정·배포는 안내만 하고 **사용자가 실행**한다. env 값은 사용자가 직접 입력하며 플러그인은 값을 받지 않는다.
-6. 같은 engine이 코드 변경 없이 `gh` manifest의 `gh auth login`/`gh auth status`와 Supabase manifest의 로그인·저장소 정책을 수행함을 확인한다. plaintext credential fallback 환경에서는 자동 로그인을 중단한다.
+6. 같은 engine이 코드 변경 없이 `gh` manifest의 `gh auth login`/`gh auth status`와 Supabase manifest의 로그인·저장소 정책을 수행함을 확인한다. secure storage 전제 CLI(gh·Supabase)가 plaintext fallback으로 낮아지면 자동 로그인을 중단한다. Vercel처럼 파일 저장이 공식 기본인 CLI는 저장 위치·logout 경로를 고지하고 승인받은 뒤에만 로그인한다.
 
 #### GitHub OAuth 안내 (guided manual)
 
@@ -440,7 +440,7 @@ novice/
 - 기존 설치·인증 상태에서는 side effect 없이 완료 단계를 건너뛰며, 부분 실패 후 재실행도 중복 설치·로그인을 하지 않는다.
 - 부트스트랩 이후 리소스 생성·env 설정·배포는 플러그인이 자동 실행하지 않고 사용자 실행을 안내한다.
 - 플러그인이 credential 값을 요청·저장·전달·자동입력하지 않음을 확인한다. env 설정 시나리오에서 값이 대화·tool argv·shell history·plugin data에 남지 않고 scanner 원문도 로그되지 않는다.
-- secure credential store가 없거나 provider가 plaintext fallback을 선택하려는 fixture에서는 자동 로그인을 중단하고 저장 위치·logout·삭제 안내를 보여 준다.
+- secure storage 전제 provider(gh·Supabase)가 plaintext fallback으로 낮아지는 fixture에서는 자동 로그인을 중단하고 저장 위치·logout·삭제 안내를 보여 준다. 파일 저장이 공식 기본인 provider(Vercel) fixture에서는 중단 대신 저장 위치·logout 경로가 승인 UI에 고지되고 승인 없이는 로그인이 실행되지 않음을 검증한다.
 - Tier 2 fixture: 미등재 CLI에서 ad-hoc manifest(근거 URL·coordinate·argv)가 화면에 제시되고, 사용자 승인 시에만 동일 engine으로 설치·로그인이 진행되며, 승인 거부·공식 근거 미확인 시 guided manual로 넘어간다.
 - 로그인/CAPTCHA/MFA는 사용자가 직접 완료한다.
 - MCP allowlist 밖 server와 미검증 provenance는 자동 실행되지 않는다. Chrome 미지원 환경에서 guided manual로 정상 downgrade한다.
@@ -467,7 +467,7 @@ novice/
 | 안전 패턴 우회 | 과신과 실제 사고 | 위협 모델·미보장 범위 공개, deny fixture 지속 확장 |
 | hook crash/timeout fail-open | 위험 tool 실행 | 지원 문법·입력 크기 제한, 예외 exit 2, timeout 한계를 안전 보증에서 제외 |
 | model secret 노출 | credential 유출 | 값 요청·전달·저장 금지, `updatedToolOutput` redaction, env 입력은 사용자 직접, 원문 없는 scanner 로그 |
-| provider CLI plaintext credential fallback | 로컬 credential 노출 | manifest preflight에서 storage 지원 확인, plaintext fallback이면 자동 login 중단, 위치·logout·삭제 안내 |
+| provider CLI plaintext credential fallback | 로컬 credential 노출 | manifest preflight에서 storage 지원 확인. secure storage 전제 CLI는 fallback 시 자동 login 중단, 파일 저장이 공식 기본인 CLI는 위치·logout 경로 고지 후 승인 시에만 login (`abort_auto_login_on_plaintext` 정책) |
 | package name·설치 경로 환각/typosquat | 공급망 침해 | Tier 1은 versioned manifest의 고정 coordinate만 실행. Tier 2는 공식 근거 출처·coordinate·argv를 사용자에게 그대로 제시하고 승인 없이는 실행하지 않음. 초보자가 근거를 판단 못 할 위험은 잔존 리스크로 문서화 |
 | secret scanner 오탐 | 정상 commit/deploy 방해 | benign fixture와 10% 오탐 상한, 탐지 이유·안전한 수정 경로·false-positive 보고 절차 표시 |
 | Git checkpoint 과신 | 외부/미추적 데이터 손실 | tracked 범위 표시, 외부 리소스는 별도 rollback 대상으로 표시 |

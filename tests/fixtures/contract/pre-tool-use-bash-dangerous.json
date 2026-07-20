@@ -1,0 +1,15 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "d1962f89-ea63-4200-9da0-db3a013d87cf",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf /tmp/fixture-project",
+    "description": "Delete project"
+  },
+  "tool_use_id": "toolu_011ohSMKR3sCg3NH3wUxUA6p",
+  "provenance": "derived-from-capture-2.1.215"
+}

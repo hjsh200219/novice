@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-07-20",
+  "input_caps": {
+    "command_bytes": 65536,
+    "single_file_bytes": 1048576,
+    "total_candidate_bytes": 5242880
+  },
+  "protected_branches": {
+    "builtin": ["main", "master", "production", "release/*"],
+    "override_policy": "add-only"
+  },
+  "target_classes": ["development", "preview", "staging", "production", "unknown"],
+  "target_flag_hints": {
+    "production": ["--prod", "--production", "-e production", "--env production", "--environment production"],
+    "preview": ["--preview", "-e preview", "--env preview"],
+    "staging": ["-e staging", "--env staging", "--environment staging"]
+  },
+  "dangerous_tokens": [
+    "rm", "rmdir", "del", "dd", "mkfs", "shred", "format",
+    "force", "--force", "-f", "reset", "clean", "drop", "truncate", "delete", "destroy",
+    "deploy", "publish", "push",
+    "secret", "token", "password", "credential", "apikey", "api_key", "private_key",
+    "curl", "wget", "eval"
+  ],
+  "shell_rules": {
+    "rm": {
+      "deny_paths": ["/", "~", "$HOME", ".", "..", "*"],
+      "deny_when_recursive_targets_project_root": true,
+      "ask_when_recursive": true,
+      "reason": "복구 불가능한 파일 삭제 가능성"
+    },
+    "dangerous_commands_deny": ["dd", "mkfs", "mkfs.ext4", "mkfs.xfs", "shred", "diskutil"],
+    "dangerous_commands_ask": ["rmdir", "chmod", "chown", "kill", "pkill", "killall"],
+    "powershell_dangerous_deny": ["Format-Volume", "Clear-Disk", "Remove-Partition"],
+    "powershell_dangerous_ask": ["Remove-Item", "Clear-Content", "Stop-Process"]
+  },
+  "git_rules": {
+    "push_force_protected_branch": "deny",
+    "push_force_other_branch": "ask",
+    "reset_hard": "ask",
+    "reset_hard_discards_over_lines": 0,
+    "clean_force": "ask",
+    "clean_force_with_dirs": "ask",
+    "commit_scan": {
+      "plain": "index",
+      "all_flag": "tracked-worktree",
+      "pathspec": "resolved-paths",
+      "unborn_head": "ask",
+      "unsupported_options": "ask"
+    }
+  },
+  "deploy_clis": {
+    "vercel": {
+      "destructive_verbs": {
+        "rm": { "production": "deny", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "deny" },
+        "remove": { "production": "deny", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "deny" },
+        "rollback": { "production": "ask", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "ask" }
+      },
+      "deploy_verbs": ["deploy", ""],
+      "secret_scan_on_deploy": true
+    },
+    "supabase": {
+      "destructive_verbs": {
+        "db reset": { "production": "deny", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "deny" },
+        "projects delete": { "production": "deny", "preview": "deny", "staging": "deny", "development": "deny", "unknown": "deny" },
+        "db push": { "production": "ask", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "ask" }
+      }
+    },
+    "gh": {
+      "destructive_verbs": {
+        "repo delete": { "production": "deny", "preview": "deny", "staging": "deny", "development": "deny", "unknown": "deny" },
+        "release delete": { "production": "ask", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "ask" }
+      }
+    }
+  },
+  "mcp_rules": {
+    "destructive_name_patterns": [
+      "delete", "drop", "remove", "destroy", "truncate", "reset", "purge", "wipe"
+    ],
+    "action": { "production": "deny", "preview": "ask", "staging": "ask", "development": "ask", "unknown": "deny" }
+  },
+  "secret_patterns": [
+    {
+      "id": "aws-access-key-id",
+      "pattern": "\\bAKIA[0-9A-Z]{16}\\b",
+      "description": "AWS Access Key ID"
+    },
+    {
+      "id": "aws-secret-access-key",
+      "pattern": "(?i)aws[_-]?secret[_-]?access[_-]?key\\s*[:=]\\s*['\"]?[A-Za-z0-9/+=]{40}",
+      "description": "AWS Secret Access Key 할당"
+    },
+    {
+      "id": "github-token",
+      "pattern": "\\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,255}\\b",
+      "description": "GitHub token"
+    },
+    {
+      "id": "github-fine-grained-pat",
+      "pattern": "\\bgithub_pat_[A-Za-z0-9_]{22,255}\\b",
+      "description": "GitHub fine-grained PAT"
+    },
+    {
+      "id": "slack-token",
+      "pattern": "\\bxox[baprs]-[A-Za-z0-9-]{10,250}\\b",
+      "description": "Slack token"
+    },
+    {
+      "id": "stripe-secret-key",
+      "pattern": "\\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{24,247}\\b",
+      "description": "Stripe secret key"
+    },
+    {
+      "id": "openai-api-key",
+      "pattern": "\\bsk-[A-Za-z0-9_-]{20,}T3BlbkFJ[A-Za-z0-9_-]{20,}\\b",
+      "description": "OpenAI API key"
+    },
+    {
+      "id": "anthropic-api-key",
+      "pattern": "\\bsk-ant-[A-Za-z0-9_-]{24,}\\b",
+      "description": "Anthropic API key"
+    },
+    {
+      "id": "google-api-key",
+      "pattern": "\\bAIza[0-9A-Za-z_-]{35}\\b",
+      "description": "Google API key"
+    },
+    {
+      "id": "private-key-block",
+      "pattern": "-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY(?: BLOCK)?-----",
+      "description": "PEM private key block"
+    },
+    {
+      "id": "jwt",
+      "pattern": "\\beyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\b",
+      "description": "JWT"
+    },
+    {
+      "id": "supabase-service-role-hint",
+      "pattern": "(?i)service[_-]?role[_-]?key\\s*[:=]\\s*['\"]?eyJ[A-Za-z0-9_.-]{20,}",
+      "description": "Supabase service role key 할당"
+    },
+    {
+      "id": "generic-assignment",
+      "pattern": "(?i)\\b(?:api[_-]?key|secret|token|passwd|password|credential)s?\\b\\s*[:=]\\s*['\"]([A-Za-z0-9/+_=-]{20,})['\"]",
+      "description": "고엔트로피 비밀값 할당 (entropy 보조 판정 대상)",
+      "entropy_check": true
+    }
+  ],
+  "entropy": {
+    "min_length": 20,
+    "shannon_threshold": 3.5,
+    "placeholder_allowlist": [
+      "(?i)^(?:x+|0+|1234|test|example|sample|dummy|placeholder|your[_-]|changeme|redacted|<[^>]+>|\\$\\{[^}]+\\}|%[A-Z_]+%)",
+      "(?i)(?:example|sample|dummy|placeholder|fixture|fake)"
+    ]
+  },
+  "scan_file_extensions_skip": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".mp4", ".mp3", ".woff", ".woff2", ".ttf", ".eot"]
+}

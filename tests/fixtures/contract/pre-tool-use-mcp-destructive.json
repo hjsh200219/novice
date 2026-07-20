@@ -1,0 +1,15 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "d1962f89-ea63-4200-9da0-db3a013d87cf",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "mcp__supabase__delete_project",
+  "tool_input": {
+    "project_ref": "abcd1234",
+    "environment": "production"
+  },
+  "tool_use_id": "toolu_fixture_mcp_0001",
+  "provenance": "documented"
+}

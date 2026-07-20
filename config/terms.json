@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-07-20",
+  "terms": [
+    {
+      "term": "repository",
+      "explanation": "프로젝트의 모든 파일과 변경 기록을 담는 저장소",
+      "aliases": ["repo", "저장소", "리포지토리", "레포"],
+      "category": "git"
+    },
+    {
+      "term": "commit",
+      "explanation": "현재 변경을 하나의 저장 지점으로 기록하는 것",
+      "aliases": ["커밋"],
+      "category": "git"
+    },
+    {
+      "term": "branch",
+      "explanation": "원본을 건드리지 않고 변경을 시도할 수 있는 독립 작업 줄기",
+      "aliases": ["브랜치"],
+      "category": "git"
+    },
+    {
+      "term": "merge",
+      "explanation": "두 작업 줄기의 변경 내용을 하나로 합치는 것",
+      "aliases": ["머지", "병합"],
+      "category": "git"
+    },
+    {
+      "term": "push",
+      "explanation": "내 컴퓨터의 저장 기록을 원격 저장소로 올리는 것",
+      "aliases": ["푸시", "푸쉬"],
+      "category": "git"
+    },
+    {
+      "term": "pull",
+      "explanation": "원격 저장소의 최신 변경을 내 컴퓨터로 가져오는 것",
+      "aliases": ["풀"],
+      "category": "git"
+    },
+    {
+      "term": "clone",
+      "explanation": "원격 저장소 전체를 내 컴퓨터로 복제하는 것",
+      "aliases": ["클론", "복제"],
+      "category": "git"
+    },
+    {
+      "term": ".gitignore",
+      "explanation": "Git이 추적하지 않을 파일 목록을 적어 두는 설정 파일",
+      "aliases": ["깃이그노어", "gitignore"],
+      "category": "git"
+    },
+    {
+      "term": "terminal",
+      "explanation": "글자로 명령을 입력해 컴퓨터를 조작하는 창",
+      "aliases": ["터미널", "콘솔", "console"],
+      "category": "terminal"
+    },
+    {
+      "term": "CLI",
+      "explanation": "마우스 대신 명령어 문장으로 프로그램을 다루는 방식",
+      "aliases": ["command line", "커맨드라인", "명령줄"],
+      "category": "terminal"
+    },
+    {
+      "term": "shell",
+      "explanation": "터미널에서 입력한 명령을 해석해 실행하는 프로그램",
+      "aliases": ["셸", "쉘", "bash", "zsh"],
+      "category": "terminal"
+    },
+    {
+      "term": "directory",
+      "explanation": "파일을 묶어 두는 폴더",
+      "aliases": ["디렉토리", "디렉터리", "폴더", "folder"],
+      "category": "terminal"
+    },
+    {
+      "term": "path",
+      "explanation": "파일이나 폴더가 있는 위치를 나타내는 주소",
+      "aliases": ["경로", "패스"],
+      "category": "terminal"
+    },
+    {
+      "term": "working directory",
+      "explanation": "지금 명령이 실행되는 기준 폴더",
+      "aliases": ["작업 디렉토리", "현재 디렉토리", "cwd"],
+      "category": "terminal"
+    },
+    {
+      "term": "frontend",
+      "explanation": "사용자가 화면에서 직접 보고 누르는 부분",
+      "aliases": ["프론트엔드", "프론트", "front-end"],
+      "category": "web"
+    },
+    {
+      "term": "backend",
+      "explanation": "화면 뒤에서 데이터 처리와 규칙을 담당하는 부분",
+      "aliases": ["백엔드", "백앤드", "back-end"],
+      "category": "web"
+    },
+    {
+      "term": "API",
+      "explanation": "프로그램끼리 정해진 형식으로 요청과 응답을 주고받는 창구",
+      "aliases": ["에이피아이"],
+      "category": "web"
+    },
+    {
+      "term": "framework",
+      "explanation": "앱의 뼈대와 규칙을 미리 제공하는 개발 도구 묶음",
+      "aliases": ["프레임워크", "프레임웍"],
+      "category": "web"
+    },
+    {
+      "term": "server",
+      "explanation": "요청을 받아 데이터나 화면을 돌려주는 컴퓨터 또는 프로그램",
+      "aliases": ["서버"],
+      "category": "web"
+    },
+    {
+      "term": "localhost",
+      "explanation": "내 컴퓨터 안에서만 접속되는 개발용 주소",
+      "aliases": ["로컬호스트", "로컬 서버", "127.0.0.1"],
+      "category": "web"
+    },
+    {
+      "term": "database",
+      "explanation": "데이터를 구조적으로 저장하고 찾아 쓰는 창고",
+      "aliases": ["데이터베이스", "DB", "디비"],
+      "category": "database"
+    },
+    {
+      "term": "schema",
+      "explanation": "데이터를 어떤 형태와 규칙으로 저장할지 정한 설계도",
+      "aliases": ["스키마"],
+      "category": "database"
+    },
+    {
+      "term": "migration",
+      "explanation": "데이터베이스 구조 변경을 기록하고 순서대로 적용하는 것",
+      "aliases": ["마이그레이션"],
+      "category": "database"
+    },
+    {
+      "term": "query",
+      "explanation": "데이터베이스에 데이터를 요청하거나 변경하는 명령문",
+      "aliases": ["쿼리"],
+      "category": "database"
+    },
+    {
+      "term": "OAuth",
+      "explanation": "비밀번호를 넘기지 않고 다른 서비스 계정으로 로그인 권한을 빌려주는 방식",
+      "aliases": ["오어스", "소셜 로그인"],
+      "category": "database"
+    },
+    {
+      "term": "token",
+      "explanation": "로그인 상태나 권한을 증명하는 임시 출입증 문자열",
+      "aliases": ["토큰", "액세스 토큰", "access token"],
+      "category": "database"
+    },
+    {
+      "term": "deploy",
+      "explanation": "만든 앱을 다른 사람이 쓸 수 있게 서버에 올리는 것",
+      "aliases": ["배포", "디플로이"],
+      "category": "deploy"
+    },
+    {
+      "term": "preview deployment",
+      "explanation": "정식 공개 전에 변경 내용을 미리 확인하는 임시 배포",
+      "aliases": ["프리뷰 배포", "미리보기 배포", "preview"],
+      "category": "deploy"
+    },
+    {
+      "term": "production",
+      "explanation": "실제 사용자가 쓰는 운영 환경",
+      "aliases": ["프로덕션", "운영 환경", "prod", "실서비스"],
+      "category": "deploy"
+    },
+    {
+      "term": "environment variable",
+      "explanation": "코드 밖에서 주입하는 설정값으로, 환경마다 다르게 지정할 수 있다",
+      "aliases": ["환경변수", "환경 변수", "env", "env var"],
+      "category": "deploy"
+    },
+    {
+      "term": "secret",
+      "explanation": "API 키나 비밀번호처럼 외부에 노출되면 안 되는 비밀값",
+      "aliases": ["시크릿", "비밀값", "API 키", "api key"],
+      "category": "deploy"
+    },
+    {
+      "term": "build",
+      "explanation": "작성한 코드를 실행 가능한 형태로 변환하고 묶는 과정",
+      "aliases": ["빌드"],
+      "category": "deploy"
+    }
+  ]
+}

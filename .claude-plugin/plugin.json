@@ -1,0 +1,23 @@
+{
+  "name": "novice",
+  "version": "0.1.0",
+  "description": "비개발자 입문자를 위한 3단계 학습 동반자 — 실제 개발 용어 보존, 안전 게이트, 외부 서비스 CLI 부트스트랩",
+  "author": {
+    "name": "SHC"
+  },
+  "hooks": "./hooks/hooks.json",
+  "userConfig": {
+    "default_level": {
+      "type": "number",
+      "title": "기본 novice 레벨",
+      "description": "novice 기본 레벨 (1=최고 초보, 2=중간, 3=아키텍처 중심)",
+      "default": 1
+    },
+    "novice_enabled": {
+      "type": "boolean",
+      "title": "novice 활성화",
+      "description": "novice 학습 동반자 활성화 여부 (안전 게이트는 이 값과 무관하게 플러그인 활성 시 항상 동작)",
+      "default": true
+    }
+  }
+}

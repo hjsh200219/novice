@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "manifest_revision": 1,
+  "reviewed_at": "2026-07-20",
+  "tier": 1,
+  "service_id": "vercel",
+  "binary": "vercel",
+  "docs_url": "https://vercel.com/docs/cli",
+  "installers": [
+    {
+      "os": ["darwin", "linux", "win32"],
+      "package_manager": "npm",
+      "package_coordinate": "vercel",
+      "argv": ["npm", "install", "--global", "vercel"],
+      "min_version": "39.0.0",
+      "global_changes": ["npm global prefix에 vercel 실행 파일 추가"]
+    },
+    {
+      "os": ["darwin"],
+      "package_manager": "homebrew",
+      "package_coordinate": "vercel-cli",
+      "argv": ["brew", "install", "vercel-cli"],
+      "min_version": "39.0.0",
+      "global_changes": ["Homebrew Cellar에 vercel-cli 설치"]
+    }
+  ],
+  "detect": {
+    "argv": ["vercel", "--version"],
+    "success": { "exit_code": 0 }
+  },
+  "version_check": {
+    "argv": ["vercel", "--version"],
+    "success": { "exit_code": 0, "stdout_regex": "\\d+\\.\\d+\\.\\d+" }
+  },
+  "auth_status": {
+    "argv": ["vercel", "whoami"],
+    "success": { "exit_code": 0 },
+    "unauthenticated": { "exit_code_not": 0 }
+  },
+  "login": {
+    "argv": ["vercel", "login"],
+    "interactive": true,
+    "user_completes": ["브라우저/이메일 인증"],
+    "success_verify": "auth_status"
+  },
+  "logout": {
+    "argv": ["vercel", "logout"]
+  },
+  "credential_store": {
+    "storage": "~/.local/share/com.vercel.cli (또는 OS별 데이터 디렉토리)의 auth.json 파일",
+    "secure_storage": false,
+    "plaintext_fallback": true,
+    "abort_auto_login_on_plaintext": false,
+    "abort_note": "Vercel CLI는 토큰을 로컬 파일로 저장한다. 파일 권한과 위치를 로그인 전 사용자에게 고지한다.",
+    "disclosure": "로그인 토큰이 홈 디렉토리 아래 auth.json에 저장된다. 'vercel logout'으로 제거할 수 있다."
+  },
+  "uninstall": {
+    "npm": ["npm", "uninstall", "--global", "vercel"],
+    "homebrew": ["brew", "uninstall", "vercel-cli"]
+  },
+  "side_effects": [
+    "전역 npm/homebrew 패키지 추가",
+    "홈 디렉토리에 CLI 설정·인증 파일 생성"
+  ],
+  "noninteractive_policy": {
+    "login": "guided_manual",
+    "reason": "vercel login은 브라우저/이메일 인증이 필요하므로 claude -p·CI에서는 안내만 한다"
+  }
+}

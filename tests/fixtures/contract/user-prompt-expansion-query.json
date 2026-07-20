@@ -1,0 +1,14 @@
+{
+  "session_id": "683583a1-5c71-4d94-959b-35bb326cf091",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "cf8ffe1d-eb6e-471c-833d-d433ca729453",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "UserPromptExpansion",
+  "expansion_type": "slash_command",
+  "command_name": "novice:mode",
+  "command_args": "",
+  "command_source": "plugin",
+  "prompt": "/novice:mode",
+  "provenance": "derived-from-capture-2.1.215"
+}

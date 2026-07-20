@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-07-20",
+  "capability_priority": ["cli", "mcp", "chrome", "guided_manual"],
+  "downgrade_rules": {
+    "cli": "사용자가 CLI 설치를 거부하거나 manifest preflight가 실패하면 mcp로 낮춘다",
+    "mcp": "allowlist에 없거나 provenance를 hook input에서 검증할 수 없으면 chrome으로 낮춘다",
+    "chrome": "Claude in Chrome 미연결·제3자 provider 환경이면 guided_manual로 낮춘다"
+  },
+  "mcp_allowlist": [],
+  "chrome_policy": {
+    "mode": "visible-only",
+    "user_completes": ["login", "captcha", "mfa", "final-submit"]
+  },
+  "services": {
+    "vercel": {
+      "capabilities": {
+        "bootstrap": "cli",
+        "provisioning": "guided_manual",
+        "env_setup": "guided_manual",
+        "deploy": "guided_manual"
+      },
+      "manifest": "bootstrap-manifests/vercel.json"
+    },
+    "github": {
+      "capabilities": {
+        "bootstrap": "cli",
+        "oauth_app_setup": "guided_manual"
+      },
+      "manifest": "bootstrap-manifests/github-cli.json"
+    },
+    "supabase": {
+      "capabilities": {
+        "bootstrap": "cli",
+        "provisioning": "guided_manual",
+        "db_admin": "guided_manual"
+      },
+      "manifest": "bootstrap-manifests/supabase.json"
+    }
+  }
+}

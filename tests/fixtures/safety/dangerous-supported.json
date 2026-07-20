@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf /"
+      },
+      "expect": "deny",
+      "note": "filesystem root"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf ~"
+      },
+      "expect": "deny",
+      "note": "home"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf '$HOME'"
+      },
+      "expect": "deny",
+      "note": "home via quoted var literal"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf ."
+      },
+      "expect": "deny",
+      "note": "project root"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf .."
+      },
+      "expect": "deny",
+      "note": "parent of project"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf {{CWD}}"
+      },
+      "expect": "deny",
+      "note": "absolute project root"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -rf src"
+      },
+      "expect": "ask",
+      "note": "recursive subdir"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm -r node_modules"
+      },
+      "expect": "ask",
+      "note": "recursive subdir"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push --force origin main"
+      },
+      "expect": "deny",
+      "note": "protected branch"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push -f origin master"
+      },
+      "expect": "deny",
+      "note": "protected branch"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push --force-with-lease origin production"
+      },
+      "expect": "deny",
+      "note": "protected branch"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push -f origin release/1.0"
+      },
+      "expect": "deny",
+      "note": "protected glob"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push --force origin feature-x"
+      },
+      "expect": "ask",
+      "note": "force to unprotected"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push -f"
+      },
+      "expect": "deny",
+      "note": "force push, current branch is protected main"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git reset --hard"
+      },
+      "expect": "ask",
+      "note": "discards uncommitted work"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git reset --hard HEAD~3"
+      },
+      "expect": "ask",
+      "note": "discards commits"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git clean -fd"
+      },
+      "expect": "ask",
+      "note": "deletes untracked incl dirs"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git clean -fdx"
+      },
+      "expect": "ask",
+      "note": "deletes untracked + ignored"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "dd if=/dev/zero of=/dev/sda"
+      },
+      "expect": "deny",
+      "note": "disk destroyer"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "mkfs.ext4 /dev/sda1"
+      },
+      "expect": "deny",
+      "note": "format"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Format-Volume -DriveLetter C"
+      },
+      "expect": "deny",
+      "note": "powershell format"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Remove-Item -Recurse C:\\projects\\app"
+      },
+      "expect": "ask",
+      "note": "powershell recursive delete"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel rm my-app --prod"
+      },
+      "expect": "deny",
+      "note": "production delete"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel rm my-app"
+      },
+      "expect": "deny",
+      "note": "unknown target delete"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel rollback"
+      },
+      "expect": "ask",
+      "note": "rollback"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "supabase db reset"
+      },
+      "expect": "deny",
+      "note": "unknown target db reset"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "supabase projects delete my-proj"
+      },
+      "expect": "deny",
+      "note": "project delete always deny"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "gh repo delete owner/repo"
+      },
+      "expect": "deny",
+      "note": "repo delete always deny"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "gh release delete v1.0.0"
+      },
+      "expect": "ask",
+      "note": "release delete"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel --prod"
+      },
+      "expect": "ask",
+      "note": "production deploy confirmation"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "curl -H 'Authorization: Bearer ghp_aB3dE6gH9jK2mN5pQ8sT1vW4yZ7bC0dF3gH6jK9m' https://api.github.com/user"
+      },
+      "expect": "deny",
+      "note": "secret in argv"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "echo AKIAABCDEFGHIJKLMNOP"
+      },
+      "expect": "deny",
+      "note": "aws key in argv"
+    },
+    {
+      "tool_name": "mcp__supabase__delete_project",
+      "tool_input": {
+        "project_ref": "abc",
+        "environment": "production"
+      },
+      "expect": "deny",
+      "note": "mcp destructive production"
+    },
+    {
+      "tool_name": "mcp__db__drop_table",
+      "tool_input": {
+        "table": "users",
+        "env": "dev"
+      },
+      "expect": "ask",
+      "note": "mcp destructive dev"
+    },
+    {
+      "tool_name": "mcp__cloud__reset_database",
+      "tool_input": {
+        "id": "xyz"
+      },
+      "expect": "deny",
+      "note": "mcp destructive unknown target"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Clear-Disk -Number 0 -RemoveData"
+      },
+      "expect": "deny",
+      "note": "powershell disk wipe"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Stop-Process -Name node"
+      },
+      "expect": "ask",
+      "note": "powershell process kill"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "remove-item -Recurse C:\\projects\\app"
+      },
+      "expect": "ask",
+      "note": "lowercase cmdlet routes via known list"
+    }
+  ]
+}

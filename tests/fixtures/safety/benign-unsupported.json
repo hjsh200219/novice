@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm run build && npm test"
+      },
+      "expect": "ask",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cat package.json | head -5"
+      },
+      "expect": "ask",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "echo \"done\" > log.txt"
+      },
+      "expect": "ask",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git log --oneline | head -5"
+      },
+      "expect": "ask",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "ls src | sort"
+      },
+      "expect": "ask",
+      "note": ""
+    }
+  ]
+}

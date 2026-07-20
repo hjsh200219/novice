@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "ls"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "ls -la"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "pwd"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cat README.md"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "head -n 20 notes.txt"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "mkdir src"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cp a.txt b.txt"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "mv a.txt b.txt"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "touch index.js"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "echo hello"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "rm old-note.txt"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "node script.js"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "node --version"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm --version"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm install"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm install express"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm run dev"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npm test"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "npx create-next-app my-app"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "python3 script.py"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "pip install requests"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git status"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git log --oneline"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git diff"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git add ."
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git add src/app.js"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git branch"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git switch -c feature/login"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git commit -m \"feat: login form\""
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git commit -am \"fix: typo\""
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git push origin feature-x"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git pull"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git clone https://github.com/vercel/next.js.git"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git stash"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel whoami"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "vercel ls"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "gh auth status"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "gh pr list"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "supabase projects list"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "supabase --version"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "which node"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "brew install jq"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "df -h"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "chmod +x script.sh"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "kill 12345"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Get-ChildItem"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Get-Content README.md"
+      },
+      "expect": "allow",
+      "note": ""
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "Test-Path src"
+      },
+      "expect": "allow",
+      "note": ""
+    }
+  ]
+}

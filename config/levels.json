@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "default_level": 1,
+  "capsule_max_chars": 800,
+  "tombstone_max_chars": 300,
+  "glossary_max_chars": 5000,
+  "levels": {
+    "1": {
+      "fade_threshold": 3,
+      "term_explanation": "explain-until-fade",
+      "action_narration": "before-and-after",
+      "visualization": "steps3plus-or-branch-or-risk-or-recovery",
+      "cost_loop_intervention": "low-threshold",
+      "repeat_failure_threshold": 2
+    },
+    "2": {
+      "fade_threshold": 1,
+      "term_explanation": "explain-first-occurrence",
+      "action_narration": "key-decisions-only",
+      "visualization": "major-branches",
+      "cost_loop_intervention": "repeat-detected",
+      "repeat_failure_threshold": 3
+    },
+    "3": {
+      "fade_threshold": 0,
+      "term_explanation": "on-request-only",
+      "action_narration": "architecture-and-userflow",
+      "visualization": "on-request-or-risk",
+      "cost_loop_intervention": "explicit-anomaly-only",
+      "repeat_failure_threshold": 5
+    }
+  }
+}

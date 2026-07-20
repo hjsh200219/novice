@@ -1,0 +1,10 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "d1962f89-ea63-4200-9da0-db3a013d87cf",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "echo hello 를 실행하고, 그 다음 'false' 명령을 실행해봐. 둘 다 실행한 뒤 한 줄로 결과 요약해.",
+  "provenance": "captured-2.1.215"
+}

@@ -1,0 +1,29 @@
+{
+  "session_id": "f2dd3209-3621-40b8-ad57-908d5c830733",
+  "transcript_path": "/tmp/fixture-transcript.jsonl",
+  "cwd": "/tmp/fixture-project",
+  "prompt_id": "d1962f89-ea63-4200-9da0-db3a013d87cf",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PostToolBatch",
+  "tool_calls": [
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "echo hello",
+        "description": "Run echo hello command"
+      },
+      "tool_use_id": "toolu_011ohSMKR3sCg3NH3wUxUA6p",
+      "tool_response": "hello"
+    },
+    {
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "false",
+        "description": "Run false command"
+      },
+      "tool_use_id": "toolu_01Le7N8ndSLibJyRWdF78VW5",
+      "tool_response": "Exit code 1"
+    }
+  ],
+  "provenance": "captured-2.1.215"
+}

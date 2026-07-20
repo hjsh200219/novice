@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "manifest_revision": 1,
+  "reviewed_at": "2026-07-20",
+  "tier": 1,
+  "service_id": "supabase",
+  "binary": "supabase",
+  "docs_url": "https://supabase.com/docs/reference/cli/install",
+  "installers": [
+    {
+      "os": ["darwin", "linux"],
+      "package_manager": "homebrew",
+      "package_coordinate": "supabase/tap/supabase",
+      "argv": ["brew", "install", "supabase/tap/supabase"],
+      "min_version": "1.200.0",
+      "global_changes": ["Homebrew tap 추가 및 supabase 설치"]
+    },
+    {
+      "os": ["win32"],
+      "package_manager": "scoop",
+      "package_coordinate": "supabase",
+      "argv": ["scoop", "install", "supabase"],
+      "min_version": "1.200.0",
+      "global_changes": ["scoop bucket에서 supabase 설치"]
+    }
+  ],
+  "detect": {
+    "argv": ["supabase", "--version"],
+    "success": { "exit_code": 0 }
+  },
+  "version_check": {
+    "argv": ["supabase", "--version"],
+    "success": { "exit_code": 0, "stdout_regex": "\\d+\\.\\d+\\.\\d+" }
+  },
+  "auth_status": {
+    "argv": ["supabase", "projects", "list"],
+    "success": { "exit_code": 0 },
+    "unauthenticated": { "exit_code_not": 0 }
+  },
+  "login": {
+    "argv": ["supabase", "login"],
+    "interactive": true,
+    "user_completes": ["브라우저에서 access token 발급·확인"],
+    "success_verify": "auth_status"
+  },
+  "logout": {
+    "argv": ["supabase", "logout"]
+  },
+  "credential_store": {
+    "storage": "OS native credential storage (macOS Keychain 등) 우선",
+    "secure_storage": true,
+    "plaintext_fallback": true,
+    "plaintext_fallback_location": "~/.supabase/access-token",
+    "abort_auto_login_on_plaintext": true,
+    "abort_note": "native credential storage가 없어 plaintext 파일로 떨어지면 자동 로그인을 중단하고 위치·삭제 방법을 안내한다.",
+    "disclosure": "access token은 기본적으로 OS 보안 저장소에 저장된다. 미지원 환경에서는 ~/.supabase 아래 평문 저장될 수 있다."
+  },
+  "uninstall": {
+    "homebrew": ["brew", "uninstall", "supabase"],
+    "scoop": ["scoop", "uninstall", "supabase"]
+  },
+  "side_effects": [
+    "전역 패키지 추가",
+    "~/.supabase 설정 디렉토리 생성 가능",
+    "OS keychain에 access token 항목 추가"
+  ],
+  "noninteractive_policy": {
+    "login": "guided_manual",
+    "reason": "supabase login은 브라우저 토큰 발급이 필요하다. 비대화형 환경에서는 SUPABASE_ACCESS_TOKEN 환경변수 설정을 사용자가 직접 하도록 안내한다"
+  }
+}

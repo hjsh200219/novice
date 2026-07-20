@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "manifest_revision": 1,
+  "reviewed_at": "2026-07-20",
+  "tier": 1,
+  "service_id": "github",
+  "binary": "gh",
+  "docs_url": "https://cli.github.com/manual/gh_auth_login",
+  "installers": [
+    {
+      "os": ["darwin"],
+      "package_manager": "homebrew",
+      "package_coordinate": "gh",
+      "argv": ["brew", "install", "gh"],
+      "min_version": "2.40.0",
+      "global_changes": ["Homebrew Cellar에 gh 설치"]
+    },
+    {
+      "os": ["linux"],
+      "package_manager": "apt",
+      "package_coordinate": "gh",
+      "argv": ["sudo", "apt-get", "install", "-y", "gh"],
+      "min_version": "2.40.0",
+      "global_changes": ["시스템 패키지로 gh 설치"]
+    },
+    {
+      "os": ["win32"],
+      "package_manager": "winget",
+      "package_coordinate": "GitHub.cli",
+      "argv": ["winget", "install", "--id", "GitHub.cli", "--exact"],
+      "min_version": "2.40.0",
+      "global_changes": ["시스템에 GitHub CLI 설치"]
+    }
+  ],
+  "detect": {
+    "argv": ["gh", "--version"],
+    "success": { "exit_code": 0 }
+  },
+  "version_check": {
+    "argv": ["gh", "--version"],
+    "success": { "exit_code": 0, "stdout_regex": "gh version \\d+\\.\\d+\\.\\d+" }
+  },
+  "auth_status": {
+    "argv": ["gh", "auth", "status"],
+    "success": { "exit_code": 0 },
+    "unauthenticated": { "exit_code_not": 0 }
+  },
+  "login": {
+    "argv": ["gh", "auth", "login", "--web"],
+    "interactive": true,
+    "user_completes": ["브라우저 device flow 인증 코드 입력"],
+    "success_verify": "auth_status"
+  },
+  "logout": {
+    "argv": ["gh", "auth", "logout"]
+  },
+  "credential_store": {
+    "storage": "OS keychain (macOS Keychain, Windows Credential Manager, libsecret) 우선",
+    "secure_storage": true,
+    "plaintext_fallback": true,
+    "plaintext_fallback_location": "~/.config/gh/hosts.yml",
+    "abort_auto_login_on_plaintext": true,
+    "abort_note": "keychain을 쓸 수 없어 hosts.yml plaintext로 떨어지는 환경이면 자동 로그인을 중단하고 위치·위험·logout 경로를 안내한다.",
+    "disclosure": "인증 토큰은 기본적으로 OS keychain에 저장된다. keychain이 없으면 ~/.config/gh/hosts.yml에 평문 저장될 수 있다."
+  },
+  "uninstall": {
+    "homebrew": ["brew", "uninstall", "gh"],
+    "apt": ["sudo", "apt-get", "remove", "-y", "gh"],
+    "winget": ["winget", "uninstall", "--id", "GitHub.cli"]
+  },
+  "side_effects": [
+    "전역 패키지 추가",
+    "~/.config/gh 설정 디렉토리 생성",
+    "OS keychain에 인증 항목 추가"
+  ],
+  "noninteractive_policy": {
+    "login": "deny",
+    "reason": "gh auth login 대화형 흐름은 비대화형 환경에서 실행하지 않는다. GH_TOKEN 환경변수 사용법을 guided manual로 안내한다"
+  }
+}
