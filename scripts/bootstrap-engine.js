@@ -13,6 +13,7 @@
 import path from 'node:path';
 import { validateManifest, loadTier1Manifest, buildAdHocManifest } from './lib/manifest.js';
 import { dataDir, writeJsonAtomic, readJsonSafe, assertSafeId } from './lib/state.js';
+import { planCapability } from './lib/capability-router.js';
 
 function auditPath(sessionId, serviceId, env) {
   return path.join(
@@ -223,4 +224,17 @@ export async function runBootstrap(engine, serviceId, { approvals = {}, adHocInp
     verified,
     recover: failed ? engine.recover(manifest, sessionId) : null,
   };
+}
+
+// Capability-routed entry point: pick the path (CLI → allowlisted MCP → visible Chrome →
+// guided manual) per PRD §4.3, then only the `cli` path drives the manifest engine here.
+// mcp/chrome/guided_manual return a plan for the model/user to carry out — the plugin never
+// invokes MCP tools or drives Chrome itself.
+export async function setupService(engine, serviceId, capability = 'bootstrap', ctx = {}, opts = {}) {
+  const plan = planCapability(serviceId, capability, ctx);
+  if (plan.path !== 'cli') {
+    return { routed: plan.path, plan };
+  }
+  const bootstrap = await runBootstrap(engine, serviceId, opts);
+  return { routed: 'cli', plan, bootstrap };
 }

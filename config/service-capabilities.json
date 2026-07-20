@@ -7,6 +7,15 @@
     "mcp": "allowlist에 없거나 provenance를 hook input에서 검증할 수 없으면 chrome으로 낮춘다",
     "chrome": "Claude in Chrome 미연결·제3자 provider 환경이면 guided_manual로 낮춘다"
   },
+  "mcp_allowlist_entry_schema": {
+    "service_id": "서비스 식별자 (services 키와 일치)",
+    "server": "runtime에서 식별되는 MCP server 이름 (mcp__<server>__ 접두사의 <server>)",
+    "transport": "stdio | http | sse",
+    "publisher": "공식 배포자 신원 (provenance 대조용)",
+    "docs_url": "https 공식 근거",
+    "tools": ["자동 실행을 허용하는 tool base name 목록"],
+    "capabilities": ["이 MCP가 담당할 capability (bootstrap 등)"]
+  },
   "mcp_allowlist": [],
   "chrome_policy": {
     "mode": "visible-only",

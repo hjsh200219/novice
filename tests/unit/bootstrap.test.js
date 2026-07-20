@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { validateManifest, loadTier1Manifest, buildAdHocManifest } from '../../scripts/lib/manifest.js';
-import { createEngine, runBootstrap } from '../../scripts/bootstrap-engine.js';
+import { createEngine, runBootstrap, setupService } from '../../scripts/bootstrap-engine.js';
 import { makeDataDir, repoRoot } from '../helpers/run-hook.js';
 
 const SERVICES = ['vercel', 'github', 'supabase'];
@@ -310,6 +310,38 @@ for (const file of MANIFEST_FILES) {
     assert.equal(verified.auth_ok, true);
   });
 }
+
+test('setupService: cli path drives the manifest engine; non-cli returns a routed plan only', async () => {
+  // CLI available → routes to cli and runs the engine (fresh gh machine → install+login plan).
+  {
+    const { exec, calls } = mockExec({ 'gh --version': { code: 1 } });
+    const engine = createEngine({ exec, platform: 'darwin' });
+    const r = await setupService(engine, 'github', 'bootstrap', { cliAvailable: true }, {});
+    assert.equal(r.routed, 'cli');
+    assert.ok(r.bootstrap, 'cli path must invoke runBootstrap');
+    assert.ok(calls.some((c) => c.join(' ').includes('gh --version')), 'engine preflight ran');
+  }
+
+  // CLI refused, no MCP/Chrome → guided_manual plan, engine NOT invoked.
+  {
+    const { exec, calls } = mockExec();
+    const engine = createEngine({ exec });
+    const r = await setupService(engine, 'github', 'bootstrap', { cliRefusedOrFailed: true }, {});
+    assert.equal(r.routed, 'guided_manual');
+    assert.equal(r.bootstrap, undefined);
+    assert.equal(calls.length, 0, 'no engine exec when routed away from cli');
+    assert.match(r.plan.guidance, /guided manual/);
+  }
+
+  // Pinned guided_manual capability (deploy) never touches the engine.
+  {
+    const { exec, calls } = mockExec();
+    const engine = createEngine({ exec });
+    const r = await setupService(engine, 'vercel', 'deploy', { cliAvailable: true }, {});
+    assert.equal(r.routed, 'guided_manual');
+    assert.equal(calls.length, 0);
+  }
+});
 
 test('runBootstrap orchestrates the full machine and reports already-complete runs', async () => {
   const { exec } = mockExec({ 'gh --version': { code: 0, stdout: 'gh version 2.45.0' } });

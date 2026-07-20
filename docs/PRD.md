@@ -234,11 +234,14 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 - credential broker를 제거해 플러그인이 env 값을 직접 다루는 면적은 줄지만, CLI가 인증 토큰을 생성·저장하는 위험까지 0이 되지는 않는다.
 - **"AI가 대신"의 축소:** 원 요구 2 대비, 부트스트랩까지만 자동이고 provisioning은 사용자 몫이다.
 
-#### MCP·Chrome 경로 (선택)
+#### MCP·Chrome 경로 (capability 라우터)
 
-- capability별 우선순위는 CLI → allowlisted 공식 MCP → visible Chrome → guided manual이다. CLI 설치를 사용자가 거부하거나 manifest preflight가 실패하면 다음 경로로 낮춘다.
-- MCP는 서비스 제공자가 공식 배포하고 runtime에서 식별 가능한 server·tool schema·권한·transport만 `service-capabilities.json` allowlist에 고정한 것만 사용한다. provenance를 hook input에서 검증할 수 없으면 자동 실행 대상에서 제외한다.
-- Chrome fallback은 공식 Claude in Chrome beta를 visible mode로만 사용하고, 미연결·제3자 provider 환경이면 guided manual로 낮춘다. login/CAPTCHA/MFA와 최종 submit은 사용자가 직접 한다.
+경로 선택·검증·다운그레이드는 `scripts/lib/capability-router.js`가 결정하고, `scripts/bootstrap-engine.js`의 `setupService`가 진입점이다. `cli` 경로만 manifest 엔진을 직접 실행하고 mcp·chrome·guided_manual은 plan(안내)만 반환한다.
+
+- capability별 우선순위는 CLI → allowlisted 공식 MCP → visible Chrome → guided manual이다. `resolveCapability`가 이 순서로 가용성을 검사해 첫 사용 가능 경로를 고르고, CLI 설치를 거부하거나 manifest preflight가 실패하면 다음 경로로 낮춘다. provisioning·deploy·env_setup처럼 `guided_manual`로 고정된 capability는 즉시 guided manual로 간다.
+- MCP는 `validateMcpCandidate`가 `mcp_allowlist`의 server·transport·publisher·tool과 정확히 일치하고 provenance가 hook input에서 verified인 엔트리만 허용한다. 하나라도 어긋나거나 provenance를 검증할 수 없으면 자동 실행 대상에서 제외한다. **기본 allowlist는 비어 있어 아무 MCP도 자동 실행되지 않는다.** MCP tool 실제 호출은 모델이 하고 `PreToolUse` 안전 게이트가 계속 검사한다.
+- Chrome fallback은 `chromeDecision`이 공식 Claude in Chrome 연결·비(非)제3자 provider일 때만 visible mode로 사용한다. 미연결·제3자 provider 환경이면 guided manual로 낮춘다. login/CAPTCHA/MFA와 최종 submit은 사용자가 직접 한다.
+- **라우터 한계(정직 표기):** 플러그인은 경로 결정·검증·다운그레이드·plan 생성까지만 한다. MCP 서버를 spawn하거나 MCP tool을 호출하거나 Chrome을 직접 조작하지 않는다(비목표: 임의 MCP 자동 설치·설정 금지).
 
 #### CLI 부트스트랩 acceptance scenario (Vercel 예시)
 
@@ -347,7 +350,8 @@ novice/
       github-cli.json
       supabase.json
   scripts/
-    bootstrap-engine.*
+    bootstrap-engine.*         # setupService: capability 라우터 + CLI manifest 엔진
+    lib/capability-router.*    # CLI→MCP→Chrome→guided manual 경로 결정·검증·다운그레이드
     session-start.*
     user-prompt-submit.*
     user-prompt-expansion.*
@@ -447,7 +451,9 @@ novice/
 - secure storage 전제 provider(gh·Supabase)가 plaintext fallback으로 낮아지는 fixture에서는 자동 로그인을 중단하고 저장 위치·logout·삭제 안내를 보여 준다. 파일 저장이 공식 기본인 provider(Vercel) fixture에서는 중단 대신 저장 위치·logout 경로가 승인 UI에 고지되고 승인 없이는 로그인이 실행되지 않음을 검증한다.
 - Tier 2 fixture: 미등재 CLI에서 ad-hoc manifest(근거 URL·coordinate·argv)가 화면에 제시되고, 사용자 승인 시에만 동일 engine으로 설치·로그인이 진행되며, 승인 거부·공식 근거 미확인 시 guided manual로 넘어간다.
 - 로그인/CAPTCHA/MFA는 사용자가 직접 완료한다.
-- MCP allowlist 밖 server와 미검증 provenance는 자동 실행되지 않는다. Chrome 미지원 환경에서 guided manual로 정상 downgrade한다.
+- capability 라우터가 CLI→MCP→Chrome→guided manual 우선순위로 경로를 고르고, CLI 거부·preflight 실패 시 다음 경로로 낮춘다. `guided_manual` 고정 capability는 즉시 guided manual로 간다.
+- MCP allowlist 밖 server, transport·publisher 불일치, 미검증 provenance, allowlist 밖 tool은 자동 실행되지 않는다(경로에서 제외). 기본 allowlist가 비어 있으면 MCP 경로는 항상 skip된다. Chrome 미연결·제3자 provider 환경에서 guided manual로 정상 downgrade한다.
+- 라우터는 경로 결정·검증·다운그레이드까지만 수행하고 MCP tool 호출·Chrome 조작은 하지 않는다(모델·사용자가 수행, 안전 게이트가 MCP 호출을 계속 가드).
 
 ### 검증 — product beta (구현 완료 후)
 
