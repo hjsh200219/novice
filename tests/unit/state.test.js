@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import {
   dataDir, projectKey, projectOverridePath, sessionDir, sessionStatePath,
   readJsonSafe, writeJsonAtomic, writeJsonExclusive,
-  getProjectConfig, setProjectMode, loadSession, saveSession, deleteSession,
+  getProjectConfig, setProjectMode, muteProjectTerm, unmuteProjectTerm, loadSession, saveSession, deleteSession,
   cleanupExpiredSessions, defaultSessionState, BUILTIN_DEFAULTS,
 } from '../../scripts/lib/state.js';
 
@@ -115,6 +115,32 @@ test('config precedence: override > userConfig env > builtin', () => {
   const off = getProjectConfig(cwd, envWithUser);
   assert.equal(off.enabled, false);
   assert.equal(off.level, 2, 'off keeps last level for restore');
+});
+
+test('mute/unmute persist in the project override and survive mode changes', () => {
+  const env = tmpEnv();
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-mute-'));
+
+  muteProjectTerm(cwd, 'commit', env);
+  muteProjectTerm(cwd, 'branch', env);
+  assert.deepEqual(getProjectConfig(cwd, env).muted_terms.sort(), ['branch', 'commit']);
+
+  // duplicate mute is idempotent
+  muteProjectTerm(cwd, 'commit', env);
+  assert.deepEqual(getProjectConfig(cwd, env).muted_terms.sort(), ['branch', 'commit']);
+
+  // a mode change must not wipe the mute list
+  setProjectMode(cwd, 2, env);
+  assert.deepEqual(getProjectConfig(cwd, env).muted_terms.sort(), ['branch', 'commit']);
+  assert.equal(getProjectConfig(cwd, env).level, 2);
+
+  unmuteProjectTerm(cwd, 'commit', env);
+  assert.deepEqual(getProjectConfig(cwd, env).muted_terms, ['branch']);
+
+  // muting does not disturb level/enabled
+  const cfg = getProjectConfig(cwd, env);
+  assert.equal(cfg.enabled, true);
+  assert.equal(cfg.level, 2);
 });
 
 test('setProjectMode validates input', () => {

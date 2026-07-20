@@ -4,7 +4,7 @@
 // nothing so old and new capsules never coexist in one turn).
 // Learning hook: fail open (exit 0, no output) on any internal error.
 import { readStdinJson, emitAdditionalContext, failOpen } from './lib/hookio.js';
-import { getProjectConfig, setProjectMode, loadSession, saveSession } from './lib/state.js';
+import { getProjectConfig, setProjectMode, muteProjectTerm, unmuteProjectTerm, loadSession, saveSession } from './lib/state.js';
 import { loadTerms, buildTombstone, capsuleForState } from './lib/capsule.js';
 
 const SLASH_MODE = /^\/novice:mode(\s[\s\S]*)?$/;
@@ -35,7 +35,7 @@ function resolveTerm(raw) {
 // Emit the current capsule (enabled) or nothing, honoring the skip_next_submit handshake.
 function emitCurrentOrSkip(sessionId, config, session) {
   if (config.enabled) {
-    const { revision, capsule } = capsuleForState(config.level, session);
+    const { revision, capsule } = capsuleForState(config.level, session, config.muted_terms);
     if (session.skip_next_submit === true && revision === session.capsule_revision) {
       session.skip_next_submit = false;
       saveSession(sessionId, session);
@@ -68,7 +68,7 @@ function applyModeChange(sessionId, cwd, session, mode) {
     saveSession(sessionId, session);
     return;
   }
-  const { revision, capsule } = capsuleForState(next.level, session);
+  const { revision, capsule } = capsuleForState(next.level, session, next.muted_terms || []);
   emitAdditionalContext('UserPromptSubmit', capsule);
   session.capsule_revision = revision;
   session.off_tombstone_emitted = false;
@@ -122,15 +122,12 @@ function main() {
     // Unknown target → treat as an ordinary prompt (fall through).
   }
 
-  // (c) Mute one term — force-fade it permanently (explanations stop regardless of count).
+  // (c) Mute one term — force-fade it permanently across sessions (project-scoped).
   const mute = key.match(MUTE_ONE);
   if (mute) {
     const term = resolveTerm(mute[1]);
     if (term) {
-      const ms = new Set(session.muted_terms || []);
-      ms.add(term);
-      session.muted_terms = [...ms];
-      saveSession(sessionId, session);
+      muteProjectTerm(cwd, term);
       emitCurrentOrSkip(sessionId, getProjectConfig(cwd), session);
       return;
     }
@@ -142,8 +139,7 @@ function main() {
   if (unmute) {
     const term = resolveTerm(unmute[1]);
     if (term) {
-      session.muted_terms = (session.muted_terms || []).filter((x) => x !== term);
-      saveSession(sessionId, session);
+      unmuteProjectTerm(cwd, term);
       emitCurrentOrSkip(sessionId, getProjectConfig(cwd), session);
       return;
     }

@@ -6,6 +6,7 @@
 // Learning hook: fail open (exit 0, no output) on any internal error.
 import { readStdinJson, emitAdditionalContext, emitBlock, failOpen } from './lib/hookio.js';
 import { getProjectConfig, setProjectMode, loadSession, saveSession } from './lib/state.js';
+// setProjectMode preserves muted_terms; re-read via getProjectConfig for the capsule.
 import { buildTombstone, capsuleForState } from './lib/capsule.js';
 
 const VALID_ARGS = new Set(['1', '2', '3', 'off']);
@@ -48,7 +49,7 @@ function main() {
     session.off_tombstone_emitted = true;
     session.capsule_revision = null;
   } else {
-    const { revision, capsule } = capsuleForState(next.level, session);
+    const { revision, capsule } = capsuleForState(next.level, session, next.muted_terms || []);
     emitAdditionalContext('UserPromptExpansion', capsule);
     session.capsule_revision = revision;
     session.off_tombstone_emitted = false;

@@ -18,7 +18,7 @@ function main() {
   const session = loadSession(sessionId);
 
   if (config.enabled) {
-    const { revision, capsule } = capsuleForState(config.level, session);
+    const { revision, capsule } = capsuleForState(config.level, session, config.muted_terms);
     const terms = loadTerms();
     const glossary = buildGlossary(terms);
     emitAdditionalContext('SessionStart', `${capsule}\n\n${glossary}`);

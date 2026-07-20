@@ -137,7 +137,13 @@ export function getProjectConfig(cwd = process.cwd(), env = process.env) {
   const override = readJsonSafe(projectOverridePath(key, env), {});
   const user = userConfigDefaults(env);
   const merged = { ...BUILTIN_DEFAULTS, ...user, ...sanitizeOverride(override) };
-  return { key, level: merged.level, enabled: merged.enabled, protected_branches_extra: merged.protected_branches_extra ?? [] };
+  return {
+    key,
+    level: merged.level,
+    enabled: merged.enabled,
+    protected_branches_extra: merged.protected_branches_extra ?? [],
+    muted_terms: merged.muted_terms ?? [],
+  };
 }
 
 function sanitizeOverride(override) {
@@ -147,6 +153,9 @@ function sanitizeOverride(override) {
     if (typeof override.enabled === 'boolean') out.enabled = override.enabled;
     if (Array.isArray(override.protected_branches_extra)) {
       out.protected_branches_extra = override.protected_branches_extra.filter((b) => typeof b === 'string');
+    }
+    if (Array.isArray(override.muted_terms)) {
+      out.muted_terms = override.muted_terms.filter((t) => typeof t === 'string');
     }
   }
   return out;
@@ -169,6 +178,26 @@ export function setProjectMode(cwd, mode, env = process.env) {
   return next;
 }
 
+// Project-scoped mute list (persists across sessions, unlike per-session term counters).
+function updateMutedTerms(cwd, env, mutate) {
+  const key = projectKey(cwd);
+  const file = projectOverridePath(key, env);
+  const current = sanitizeOverride(readJsonSafe(file, {}));
+  const set = new Set(current.muted_terms || []);
+  mutate(set);
+  const next = { ...current, muted_terms: [...set], updated_at: new Date().toISOString() };
+  writeJsonAtomic(file, next);
+  return next;
+}
+
+export function muteProjectTerm(cwd, term, env = process.env) {
+  return updateMutedTerms(cwd, env, (set) => set.add(term));
+}
+
+export function unmuteProjectTerm(cwd, term, env = process.env) {
+  return updateMutedTerms(cwd, env, (set) => set.delete(term));
+}
+
 // ---- session state ----
 
 export function defaultSessionState() {
@@ -176,7 +205,6 @@ export function defaultSessionState() {
     schema_version: 1,
     term_counts: {},
     reset_terms: [],
-    muted_terms: [],
     last_message_hash: null,
     capsule_revision: null,
     glossary_revision: null,

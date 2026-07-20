@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { runHook, makeDataDir, readSessionState } from '../helpers/run-hook.js';
+import { runHook, makeDataDir, readSessionState, readProjectOverrides, additionalContextOf } from '../helpers/run-hook.js';
 
 const SID = 'stop-test-session';
 
@@ -99,36 +99,62 @@ test('reset aliases zero counters; questions do not', async () => {
   assert.deepEqual(cleared.term_counts, {});
 });
 
-test('novice mute force-fades a term; unmute restores it; question does not mute', async () => {
+function mutedOf(dataDir) {
+  return readProjectOverrides(dataDir)[0]?.muted_terms ?? [];
+}
+
+test('novice mute is project-scoped (persists across sessions); unmute restores; question does not mute', async () => {
   const dataDir = makeDataDir();
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-mute-proj-'));
-  const submit = (prompt) =>
-    runHook('user-prompt-submit.js', { session_id: SID, cwd, hook_event_name: 'UserPromptSubmit', prompt }, { dataDir });
+  const submit = (prompt, sid = SID) =>
+    runHook('user-prompt-submit.js', { session_id: sid, cwd, hook_event_name: 'UserPromptSubmit', prompt }, { dataDir });
 
   // A term the user never wants explained again, even with zero exposures.
   await submit('novice mute commit');
-  const muted = readSessionState(dataDir, SID);
-  assert.deepEqual(muted.muted_terms, ['commit']);
+  assert.deepEqual(mutedOf(dataDir), ['commit'], 'mute stored in project override, not session');
 
   // Explaining it afterward must not un-mute it (mute is intentional and sticky).
   await runHook('stop.js', stopPayload(COMMIT_EXPLAINED), { dataDir });
-  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+  assert.deepEqual(mutedOf(dataDir), ['commit']);
 
   // A plain question does not mute.
   await submit('commit이 뭐예요');
-  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+  assert.deepEqual(mutedOf(dataDir), ['commit']);
 
   // Unmute restores normal fade behavior.
   await submit('novice unmute commit');
-  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, []);
+  assert.deepEqual(mutedOf(dataDir), []);
 
   // Alias resolves to the canonical term.
   await submit('novice mute 커밋');
-  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+  assert.deepEqual(mutedOf(dataDir), ['commit']);
 
   // Unknown target does not create a mute entry.
   await submit('novice mute 없는용어xyz');
-  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+  assert.deepEqual(mutedOf(dataDir), ['commit']);
+});
+
+test('a term muted in one session is still faded in a brand-new session', async () => {
+  const dataDir = makeDataDir();
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-mute-xsession-'));
+
+  // Session A mutes the term.
+  await runHook(
+    'user-prompt-submit.js',
+    { session_id: 'sess-A', cwd, hook_event_name: 'UserPromptSubmit', prompt: 'novice mute branch' },
+    { dataDir },
+  );
+  assert.deepEqual(mutedOf(dataDir), ['branch']);
+
+  // A completely different session starts fresh — the mute must carry over.
+  const start = await runHook(
+    'session-start.js',
+    { session_id: 'sess-B', cwd, hook_event_name: 'SessionStart', source: 'startup' },
+    { dataDir },
+  );
+  const ctx = additionalContextOf(start) ?? '';
+  assert.ok(ctx.includes('[NOVICE_STATE]'), 'new session injects a capsule');
+  assert.ok(ctx.includes('branch'), 'project-scoped mute must appear in the new session faded list');
 });
 
 test('muted term appears in the injected capsule faded list', async () => {

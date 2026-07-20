@@ -25,7 +25,7 @@
 자연어 별칭: 프롬프트 전체가 정확히 `novice 1|2|3|off`일 때만 모드가 바뀝니다.
 `novice reset all` / `novice reset <용어>`로 설명 카운터를 초기화합니다(다시 처음부터 카운트).
 `novice mute <용어>`는 해당 용어를 영구 제외해 노출 횟수와 무관하게 설명을 끊고,
-`novice unmute <용어>`로 되돌립니다.
+`novice unmute <용어>`로 되돌립니다. mute는 프로젝트 단위로 저장되어 **세션이 바뀌어도 유지**됩니다.
 "더 쉽게 설명해 줘" 같은 일반 문장은 현재 답변에만 영향을 주고 모드를 바꾸지 않습니다.
 
 용어는 순화하지 않습니다. `commit(현재 변경을 하나의 저장 지점으로 기록하는 것)`처럼
@@ -133,7 +133,8 @@ destructive commands, runaway cost, and secret exposure.
 Natural-language aliases: the mode changes only when the entire prompt is exactly
 `novice 1|2|3|off`. `novice reset all` / `novice reset <term>` reset the explanation counters
 (counting restarts from zero). `novice mute <term>` permanently excludes a term so its
-explanation stops regardless of exposure count, and `novice unmute <term>` undoes it.
+explanation stops regardless of exposure count, and `novice unmute <term>` undoes it. Mute is
+stored per project, so it **persists across sessions**.
 A general sentence like "explain it more simply" affects only the current answer and does not
 change the mode.
 

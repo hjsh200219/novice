@@ -162,14 +162,16 @@ export function buildTombstone(env = process.env) {
 
 // ---- orchestration convenience (shared by the hook scripts) ----
 
-function fadedForLevel(level, session, env = process.env) {
+function fadedForLevel(level, session, mutedTerms = [], env = process.env) {
   const levels = loadLevels(env);
   const threshold = levels.levels[String(level)].fade_threshold;
-  return computeFadedTerms(session.term_counts || {}, threshold, session.reset_terms || [], session.muted_terms || []);
+  return computeFadedTerms(session.term_counts || {}, threshold, session.reset_terms || [], mutedTerms);
 }
 
-export function capsuleForState(level, session, env = process.env) {
-  const faded = fadedForLevel(level, session, env);
+// mutedTerms is the project-scoped mute list (getProjectConfig().muted_terms) so mutes
+// persist across sessions; term_counts/reset_terms remain per-session.
+export function capsuleForState(level, session, mutedTerms = [], env = process.env) {
+  const faded = fadedForLevel(level, session, mutedTerms, env);
   const revision = capsuleRevision(level, faded, loadLevels(env).schema_version);
   const capsule = buildCapsule({ level, fadedTerms: faded, revision }, env);
   return { faded, revision, capsule };
