@@ -1,51 +1,46 @@
 ---
-created: 2026-07-20T09:40:00+09:00
+created: 2026-07-20T11:00:00+09:00
 project: novice
-summary: PRD revision 5 확정 (codex 적대적 리뷰 → SDK 타입 교차 판정 → 오류 교정 + 단일 구현 단계), 구현 승인 대기
+summary: PRD revision 8 확정 — rev7 플랫폼 주장 runtime 바이너리로 전부 검증 + 2-tier 부트스트랩 절충(사용자 결정). 구현 승인 대기
 ---
 
 ## Session Digest
 
-Codex 적대적 리뷰(revision 4)를 Claude가 SDK 타입 정의(`@anthropic-ai/claude-agent-sdk` v0.2.117 `sdk.d.ts`)로 교차 판정해 revision 5로 확정했다. codex 리뷰의 실질 개선(OFF tombstone, model-blind secret broker, Git candidate tree scan, Vercel 단일 MVP, 지표 방법론)은 유지하고, codex의 사실 오류 2건(`decision:block` 차단 — 실제로는 불가능, `PostToolBatch` — 존재하지 않는 hook)을 교정했다. 1차 검증의 필드명 오류(`command_input`/`expanded_prompt`)는 codex가 맞았음을 확인. 사용자 결정으로 Phase 0~3을 단일 구현 단계(완료 기준 A~D 체크리스트)로 통합했다. 구현은 승인 대기.
+codex가 rev6를 재리뷰해 revision 7 작성 (allowlisted bootstrap manifest, 유한 안전 문법, 2.1.215 계약, PostToolBatch·expansion block·범용 updatedToolOutput 재도입). Claude가 설치 runtime 바이너리(2.1.215)를 직접 grep해 검증한 결과 **codex의 플랫폼 주장 전부 사실로 확인** — rev5에서 SDK 타입(v0.2.117)으로 "오류"라 판정했던 것이 오히려 낡은 snapshot 기반 오판이었음. 판정 기준 확정: 설치 runtime 바이너리 > docs > SDK snapshot. codex의 allowlist 3개 제한이 사용자의 "개수 제한 없음" 지시와 충돌했는데, 사용자가 절충안을 선택해 revision 8로 확정: 2-tier 부트스트랩(Tier 1 manifest 자동 / Tier 2 근거 제시 + 승인 후 진행). 구현은 승인 대기.
 
 ## Progress
 
-- [DONE] PRD revision 5 확정 (미커밋)
-  - `UserPromptExpansion` payload 확정: `expansion_type`/`command_name`/`command_args`/`command_source?`/`prompt` (SDK 타입 기준)
-  - **expansion 차단 불가 확정** — invalid args는 state 미변경 + `additionalContext` 안내로 재설계
-  - `PostToolBatch` 제거 — 반복 루프는 `PostToolUse`(성공)+`PostToolUseFailure`(실패) per-call + atomic single-writer
-  - `PostToolUse` redaction은 `updatedMCPToolOutput`(MCP 전용)로 교정 — CLI stdout은 runner 정제만 가능
-  - `defer` 의미 미확정 처리 — P0 미사용 결정
-  - `Stop.last_assistant_message` optional 부재 처리 추가
-  - Phase 0~3 → 단일 구현 단계 통합 (완료 기준 A 플랫폼 contract / B mode·용어 / C 안전 gate / D Vercel E2E + 검증 beta 분리)
-  - 부록 A에 SDK 타입 정의 출처 행 추가
-- [DONE] codex rev4의 유지된 개선: OFF tombstone, model-blind secret broker, Vercel 단일 MVP(Supabase·GitHub OAuth P1), Git candidate tree scan, 자연어 별칭 exact-match, within-subject beta 지표
-- [DONE] memory 파일 3차 검증 결과로 재작성 (`claude-code-plugin-platform-facts`)
-- [TODO] 구현 착수 (전체 일괄 개발, 완료 기준 A fixture 캡처 먼저) — 사용자 승인 필요
+- [DONE] PRD revision 7 리뷰 — codex 플랫폼 주장 4건 runtime 바이너리로 전부 검증 (미커밋)
+  - `PostToolBatch` 실존: batch 전체 resolve 후 정확히 1회 실행 (바이너리 doc string이 PRD 서술과 일치)
+  - `UserPromptExpansion` block 가능 + 입력 필드(expansion_type/command_name/command_args/command_source/prompt) 일치
+  - `updatedToolOutput` 전체 tool 범용, `updatedMCPToolOutput`은 legacy MCP 전용
+  - `disable-model-invocation`·`stop_hook_active` 실존
+- [DONE] rev7의 설계 개선 확인: 유한 shell grammar(Bash·PowerShell 단일 command+argv), target 분류(dev/staging/prod/unknown), bootstrap manifest contract, event 파일 + PostToolBatch 집계, 입력 상한(64KiB/1MiB/5MiB), fallback 비율 지표
+- [DONE] memory를 runtime 판정본으로 재작성 (rev5 SDK 판정은 오판이었음)
+- [DONE] allowlist 충돌 해소 (rev8, 사용자 절충안 채택) — **2-tier 부트스트랩**: Tier 1(검토 manifest vercel/gh/supabase) 표준 승인 자동, Tier 2(그 외 모든 CLI) ad-hoc manifest(공식 근거 URL·coordinate·argv)를 화면 제시 + 사용자 승인 시 동일 engine 진행, 근거 미확인 시 guided manual. CLI 개수 제한 없음 복원.
+- [TODO] 구현 착수 (전체 일괄 개발) — 사용자 승인 필요
 
 ## Next Steps
 
 1. **사용자 실행 승인** — 단일 구현 pass 착수 전제
-2. **착수 직후: 완료 기준 A (플랫폼 contract fixture)** — 실제 설치 버전에서 `UserPromptExpansion` payload 캡처, `SessionStart(compact)` 재주입, output style 무변경, `${CLAUDE_PLUGIN_DATA}` 상태 생성 확인
-3. **전체 일괄 구현** — hooks 전부 + config schema + `adapters/vercel` + `bin/novice-secret` + tests, 완료 기준 A~D 체크리스트로 판정
+2. **착수 직후: 완료 기준 A** — 2.1.215에서 hook payload fixture 캡처 (UserPromptExpansion 순서 포함)
+3. **전체 일괄 구현** — hooks + config schema + bootstrap engine·manifest(2-tier) + skills + tests, 완료 기준 A~D 판정
 4. **검증** — concierge test(n≥5) → moderated beta(n≥20)
 
 ## Blockers
 
-- 구현은 사용자 승인 대기. PRD는 문서로 확정됐으나 broker/adapter/hook contract 실측은 전부 남아 있음.
+- 구현 착수만 사용자 승인 대기.
 
 ## Watch Out
 
-- **LLM 문서 검증 단일 출처 금지** — 1차(claude)·2차(codex) 검증이 서로 다른 항목에서 틀렸음. 플랫폼 사실은 SDK 타입 정의(`sdk.d.ts`) 같은 기계 산출물로 판정할 것. 상세: memory `claude-code-plugin-platform-facts`.
-- **expansion 차단 불가** — `UserPromptExpansion` 출력은 `additionalContext`뿐. invalid args 설계는 이 제약 위에 서 있음. 구현 시 block을 시도하지 말 것.
-- **`PostToolBatch` 없음** — codex가 만든 가공 hook. 병렬 집계는 per-call + single-writer lock.
-- **output style 사용 금지 결정됨** — `force-for-plugin`은 novice off와 양립 불가. 레벨 가변 내용은 hook capsule로만.
-- **안전 게이트는 PreToolUse 강제 차단** (novice off 무관 always-on, plugin disable 시 소멸) — 텍스트 권고 구현 금지.
-- **secret broker 경계** — secret은 model prompt·argv·stdout 통과 금지. keychain 부재 시 guided manual 강등. CLI 출력 redaction은 불가능하므로 runner가 출력을 정제해야 함.
-- **MVP는 Vercel 단독** — Supabase·GitHub OAuth는 P1 (broker·adapter contract 재사용 전제, GitHub OAuth는 callback URL 1개 제약 ADR 필요).
+- **플랫폼 사실 판정은 설치 runtime 바이너리 grep으로** — 문서 인용(1차)·SDK 타입(3차) 모두 틀렸던 역사 있음. SDK snapshot은 runtime보다 낡는다. 검증 명령은 memory `claude-code-plugin-platform-facts` 참조.
+- **rev5의 "expansion block 불가·PostToolBatch 없음" 경고는 OBSOLETE** — runtime 2.1.215에서 둘 다 실존 확인. rev7 설계(block 사용, PostToolBatch 집계)가 유효.
+- **secret 미취급 원칙 유지 (rev6)** — env/secret 값 입력은 사용자 직접. 단 rev7이 경계를 정밀화: local scanner는 메모리 내 검사 가능, provider CLI 자체 credential store는 manifest 정책으로 검증.
+- **output style 사용 금지, PreToolUse 강제 차단, 파괴 차단은 등재 패턴만 보증** — 기존 결정 유지.
+- **최소 지원 버전 2.1.215 고정** — PostToolBatch·expansion block·updatedToolOutput은 이 버전 기준. 구버전 호환을 약속하지 말 것.
 
 ## Files Touched
 
-- `docs/PRD.md` (revision 4 → 5, 미커밋)
-- `.claude-project/memory/claude-code-plugin-platform-facts.md` (3차 검증 결과로 재작성)
+- `docs/PRD.md` (revision 6 → 7(codex) → 8(2-tier 절충), 미커밋 — Claude 리뷰 통과)
+- `.claude-project/memory/` (runtime 판정본으로 재작성)
 - `.claude-project/HANDOFF.md` (본 파일)
