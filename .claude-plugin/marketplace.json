@@ -1,0 +1,25 @@
+{
+  "name": "novice",
+  "description": "비개발자 입문자용 Claude Code 학습 동반자 — 실제 개발 용어 보존, 안전 게이트, 외부 서비스 CLI 부트스트랩",
+  "owner": {
+    "name": "hjsh200219",
+    "url": "https://github.com/hjsh200219"
+  },
+  "plugins": [
+    {
+      "name": "novice",
+      "description": "비개발자 입문자를 위한 3단계 학습 동반자. 용어 설명 병기(fade), 파괴·시크릿·비용 안전 게이트, 2-tier CLI 부트스트랩(vercel/gh/supabase) + MCP·Chrome capability 라우터.",
+      "source": ".",
+      "category": "education",
+      "tags": [
+        "beginner",
+        "onboarding",
+        "korean",
+        "education",
+        "safety",
+        "vibe-coding",
+        "hooks"
+      ]
+    }
+  ]
+}
