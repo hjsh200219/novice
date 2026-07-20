@@ -2,3 +2,4 @@
 .omc/*
 !.omc/plans/
 .claude/settings.local.json
+_workspace/
