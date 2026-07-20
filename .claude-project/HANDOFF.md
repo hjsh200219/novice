@@ -1,38 +1,38 @@
 ---
-created: 2026-07-20T19:30:00+09:00
+created: 2026-07-21T01:10:00+09:00
 project: novice
-summary: novice 플러그인 구현+하네스+GC+후속조치 완료 (PRD rev 11) — 테스트 149/149, 성숙도 L4, 설치·활성화, 최신 커밋 f9ba85e
+summary: 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 제거→false-prompt 해소) + /novice front door 스킬 추가, 문서 동기화, 148 tests green, 커밋·푸시 완료(4a9cf4b)
 ---
 
 ## Session Digest
-novice 플러그인을 PRD rev 8→11로 전 범위 구현하고 marketplace 등록·실제 설치까지 마쳤다. 하네스 셋업(AGENTS 맵·ARCHITECTURE·docs/harness·verify-docs) + GC(3-에이전트 감사, 성숙도 L4/76.75) 후, GC 수동 검토 3건을 처리했다: pre-tool-use.js 472→54줄 thin hook화(분석은 scripts/lib/safety.js로 분리, 동작 무변경), zero-dep coverage(node 내장), husky/logger는 zero-dep·N/A로 불채택. rev 8→11 주요 변경: Level 2 fade 1→3, mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터(정적 allowlist + 런타임 등록·명시 동의), CLI Tier 2 동의, plaintext credential 정책(vercel 고지형/gh·supabase 중단형), latency 벤치·hook 순서 실측, plugin.json hooks 키 제거(중복 로드 버그).
+사용자가 안전 게이트를 "이 플러그인에 과하다"고 판단. 옵션 논의(A 완전제거 / B 최소코어 / C 캘리브레이션) 후 **B 채택**. `scripts/lib/safety.js`를 deny-only 최소 코어로 재작성: ask 티어를 전면 제거하고, 긍정 탐지된 파괴 비가역 작업(`rm -rf ~`·`/`·프로젝트 루트, `dd`/`mkfs`/`shred`, disk-format cmdlet, protected branch force-push, production/unknown 파괴 MCP)과 노출된 시크릿 값(commit/deploy/명령줄)만 deny. 파싱 불가·모호·staging/dev·스캔 불가는 판정하지 않고 Claude Code 네이티브 권한에 위임. 이로써 `find|sort&&ls` 같은 benign 파이프/체인 명령마다 뜨던 false-prompt(ask) 소멸. 부수로 `/novice` umbrella front door 스킬 신설(상태 대시보드+하위 명령 안내). 세션 중 잘못 짚었던 변경 2건(bypassPermissions 게이트 무력화 시도)은 되돌림.
 
 ## Progress
-- 완료: PRD rev 11 전 범위 구현, 테스트 149/149 (unit 11 + integration 4), 외부 dependency 0
-- 완료: marketplace 등록 + user scope 설치·활성화(novice@novice ✔ enabled)
-- 완료: 하네스 셋업 + GC baseline(L4/76.75) + GC 수동 검토 3건 처리
-- 완료: 안전 분석 scripts/lib/safety.js 분리(pre-tool-use 54줄), zero-dep coverage(line ~95%), zero-dep CI(.github/workflows/test.yml)
-- 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(계정), MCP/clear/compact 실측 payload(headless 불가)
+- 완료: safety.js deny-only 재작성(161줄 축소), pre-tool-use 헤더 정정
+- 완료: `/novice` umbrella 스킬(skills/novice/SKILL.md) — plugin 컴포넌트는 항상 `/novice:*` namespace
+- 완료: 문서 동기화 — PRD §4.5(SSOT), README(한/영) 위협모델, AGENTS 제약 #1, ARCHITECTURE
+- 완료: 테스트 정합 — fixtures ask→allow, dangerous-unsupported.json 제거, corpus/commit 테스트 조정 → 148 pass, verify-docs OK
+- 완료: `.gitignore` nested `**/.omc/` (테스트 잔여 상태 커밋 방지)
+- 완료: 커밋 4a9cf4b + push origin main
+- 완료: novice off (이 프로젝트, enabled:false) 저장
 
 ## Next Steps
-1. 새 세션에서 실사용 스모크 테스트 (`/plugin` → novice enabled, `/novice:mode`, 용어 병기, 안전 게이트)
-2. GitHub Actions CI 실제 push 동작 확인 (첫 워크플로 run)
-3. product beta 준비 (concierge n≥5, moderated n≥20)
-4. (선택) 재-GC로 성숙도 재채점 — safety.js 분리·coverage·CI 반영으로 P7/P8 상승 예상
+1. **플러그인 재설치** 필요 — 실행 세션은 캐시 복사본을 쓰므로 deny-only 코어와 `/novice` 명령이 아직 미반영. `/plugin` update→재설치 후 적용.
+2. (선택) fixture-scan 갭 개선 — commit secret 스캐너에 `tests/fixtures/` 경로 예외 추가 검토. [[safety-fixture-scan-self-block-gap]]
+3. (선택) 미사용 config 정리 — `safety-rules.json`의 `dangerous_tokens`는 deny-only 전환으로 미사용화, `grammar.js`의 `tokenizePowershell`도 미참조.
 
 ## Blockers
-- 없음 (남은 항목은 사람·환경 필요, 기술 블록 아님)
+- 없음 (재설치는 사용자 환경 조작, 기술 블록 아님)
 
 ## Watch Out
-- **zero external dependency** 원칙 — eslint/knip/husky 도입 금지. 레이어 강제는 scripts/verify-docs.mjs.
-- plugin.json에 `hooks` 키 넣지 말 것 (hooks/hooks.json 자동 로드 — 중복 로드 실패).
-- userConfig 항목에 `title` 필수. marketplace name엔 슬래시 불가(설치는 `install novice`).
-- mute=프로젝트 스코프(교차 세션), reset·용어 카운터=세션 스코프.
-- MCP 허용 = 정적 allowlist(비어 있음) 또는 런타임 등록+명시 동의. 자동 설치 안 함, PreToolUse가 계속 가드.
-- 안전 hook fail-closed / 학습 hook fail-open. credential 값 미취급. state는 CLAUDE_PLUGIN_DATA만.
-- tests/fixtures의 토큰(ghp_/AKIA)은 전부 synthetic.
+- 안전 정책 대전환: **ask 티어 없음**. deny는 확실한 파괴/시크릿만. 파이프 낀 파괴 명령(`rm -rf / ; …`)은 novice가 안 잡고 CC 네이티브에 위임(의도된 트레이드오프).
+- 설치본은 캐시 복사본 — repo 편집은 재설치 전까지 실행 세션에 반영 안 됨. [[claude-code-plugin-platform-facts]]
+- commit 게이트가 repo 자체 fixture(synthetic ghp_/AKIA)를 deny로 플래그(오탐) — 단 이번 세션 hook deny는 실제 커밋을 막지 않았음. [[safety-fixture-scan-self-block-gap]]
+- PRD는 rev 11 유지 중 — 안전 정책이 크게 바뀌었으니 다음에 revision bump(→12) 고려.
 
 ## Files Touched
-- 코드: scripts/(hook 10 + lib 9[safety.js 포함] + bootstrap-engine + verify-docs.mjs), config/(5 JSON + manifest 3), hooks/hooks.json
-- 문서: AGENTS.md, ARCHITECTURE.md, CLAUDE.md(@AGENTS.md), README.md(한/영), docs/(PRD rev11, harness 5, QUALITY, design-docs 2, tech-debt), .claude-project/(HANDOFF, memory 6)
-- 플러그인/CI: .claude-plugin/(plugin.json, marketplace.json), .claude/settings.json, .github/workflows/test.yml
+- 코드: scripts/lib/safety.js(재작성), scripts/pre-tool-use.js(주석)
+- 스킬: skills/novice/SKILL.md(신규)
+- 테스트: tests/fixtures/safety/{dangerous-supported,benign-unsupported}.json, tests/integration/safety-corpus.test.js, dangerous-unsupported.json(삭제)
+- 문서: docs/PRD.md, README.md, AGENTS.md, ARCHITECTURE.md
+- 기타: .gitignore
