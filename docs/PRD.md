@@ -1,9 +1,10 @@
 ---
-status: pending approval
+status: implemented (MVP) — product beta 미검증
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-20
 revision: 9
 mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화 (사용자 확정 2026-07-20)
+implementation: 완료 기준 A~D 충족, 테스트 123/123 통과 (unit 8 + integration 3, 외부 dependency 0). 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 커밋 ba4f137(코드)·b8cfec7(handoff). 잔여: product beta(사람 참가자), interactive 캡처 2건(SessionStart clear/compact source·MCP destructive payload)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -63,12 +64,12 @@ reviewers: [architect, critic]
 
 | # | 원 요구 | MVP 명세 | 검증 상태 |
 |---|---|---|---|
-| 1 | 개발 용어·기술 스택을 모르는 비개발자용 | 페르소나, Level 1 기본값, 단계별 해설 | 명세됨, beta 미검증 |
-| 2 | 외부 서비스 설정을 AI가 대신, CLI > MCP > Chrome | 2-tier 부트스트랩(Tier 1 manifest 자동, Tier 2 근거 확인 후 진행 — 개수 무제한), 이후는 사용자 직접/guided manual | 명세됨, E2E 미검증 |
-| 3 | 3단계 + 기본 Level 1 + off | `/novice:mode 1`, `2`, `3`, `off`; 명시적 자연어 별칭; OFF tombstone | 명세됨, contract test 미실행 |
-| 4 | 필요 없어진 입문자 설명 제외 | 세션별 faded 카운터, 명시적 reset, 레벨 상승 | 명세됨, 학습 효과 미검증 |
-| 5 | 실제 용어를 대체하지 않고 설명 병기 | canonical glossary와 level별 fade | 명세됨, 출력 일관성 미검증 |
-| 6 | 순서·할 일을 표로 표시하고 완료 상태 구분 | 긴 작업·분기·복구 시 표/체크리스트 | 완화 명세, beta 미검증 |
+| 1 | 개발 용어·기술 스택을 모르는 비개발자용 | 페르소나, Level 1 기본값, 단계별 해설 | 구현·테스트 통과, beta(학습 효과) 미검증 |
+| 2 | 외부 서비스 설정을 AI가 대신, CLI > MCP > Chrome | 2-tier 부트스트랩(Tier 1 manifest 자동, Tier 2 근거 확인 후 진행 — 개수 무제한), 이후는 사용자 직접/guided manual | 구현·engine 단위테스트 통과(주입 exec). 실제 설치·로그인 E2E는 사용자 환경 필요 |
+| 3 | 3단계 + 기본 Level 1 + off | `/novice:mode 1`, `2`, `3`, `off`; 명시적 자연어 별칭; OFF tombstone | 구현·contract test 통과, 실측 payload로 `/novice:mode` live E2E 확인 |
+| 4 | 필요 없어진 입문자 설명 제외 | 세션별 faded 카운터, 명시적 reset, 레벨 상승 | 구현·테스트 통과, 학습 효과 beta 미검증 |
+| 5 | 실제 용어를 대체하지 않고 설명 병기 | canonical glossary와 level별 fade | 구현·테스트 통과, 출력 일관성 beta 미검증 |
+| 6 | 순서·할 일을 표로 표시하고 완료 상태 구분 | 긴 작업·분기·복구 시 표/체크리스트 | 완화 명세 구현(capsule 규칙), beta 미검증 |
 | 7 | 인터넷·YouTube 조사·반영 | 공식 문서, 커뮤니티, YouTube 조사와 출처 표 | 조사 반영, 대표성 미검증 |
 
 > 요구 2에서 MVP가 자동화하는 것은 CLI 부트스트랩(탐지·설치·로그인·인증 확인)이며 **CLI 개수 제한은 없다**. Tier 1(검토 manifest: Vercel·GitHub CLI·Supabase CLI)은 표준 승인으로, Tier 2(그 외)는 공식 근거를 사용자가 확인·승인한 뒤 같은 engine으로 진행한다. 공식 근거를 못 찾으면 guided manual. 리소스 생성·env 설정·배포 같은 provisioning은 사용자 직접 또는 guided manual로 남긴다. 즉 "AI가 설정을 전부 대신"이 아니라 "AI가 검증 가능한 설치·로그인 경로를 진행하고 나머지를 안내"하는 정직한 축소다.
@@ -387,6 +388,8 @@ novice/
 ## 6. 구현과 완료 기준
 
 > 구현은 단계를 나누지 않고 **전체 기능을 한 번에 개발**한다(사용자 결정, revision 5). 아래 완료 기준은 순차 gate가 아니라 배포 판정용 단일 체크리스트이며 영역별로 묶었을 뿐이다. 단, 플랫폼 contract fixture 캡처(A)는 나머지 구현의 전제이므로 착수 직후 가장 먼저 수행한다.
+
+> **구현 상태 (2026-07-20):** 완료 기준 A~D 전 항목 구현·통과. 테스트 123/123 (unit 8 + integration 3, 외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0. contract fixture는 실측 Claude Code 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) SessionStart `clear`/`compact` source·MCP destructive payload는 headless 캡처 불가라 documented 상태로 남김(fixture `provenance` 필드로 구분).
 
 **산출물 (일괄)**
 
