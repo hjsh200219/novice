@@ -55,14 +55,17 @@ const SUPERSESSION =
 // Term names whose exposure count has reached the fade threshold, minus terms whose
 // counters were explicitly reset. Threshold 0 (level 3) fades every counted term, which
 // expresses "auto-explanations off" — the level rule summary carries the same meaning.
-export function computeFadedTerms(termCounts, fadeThreshold, resetTerms = []) {
+export function computeFadedTerms(termCounts, fadeThreshold, resetTerms = [], mutedTerms = []) {
   const reset = new Set(resetTerms || []);
-  const out = [];
+  // Muted terms are force-faded regardless of exposure count and beat reset —
+  // the user explicitly asked to stop explaining them ("novice mute <term>").
+  const out = new Set(mutedTerms || []);
   for (const [term, count] of Object.entries(termCounts || {})) {
+    if (out.has(term)) continue;
     if (reset.has(term)) continue;
-    if (Number(count) >= fadeThreshold) out.push(term);
+    if (Number(count) >= fadeThreshold) out.add(term);
   }
-  return out.sort();
+  return [...out].sort();
 }
 
 // ---- revisions ----
@@ -162,7 +165,7 @@ export function buildTombstone(env = process.env) {
 function fadedForLevel(level, session, env = process.env) {
   const levels = loadLevels(env);
   const threshold = levels.levels[String(level)].fade_threshold;
-  return computeFadedTerms(session.term_counts || {}, threshold, session.reset_terms || []);
+  return computeFadedTerms(session.term_counts || {}, threshold, session.reset_terms || [], session.muted_terms || []);
 }
 
 export function capsuleForState(level, session, env = process.env) {

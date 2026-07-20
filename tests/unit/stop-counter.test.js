@@ -99,6 +99,50 @@ test('reset aliases zero counters; questions do not', async () => {
   assert.deepEqual(cleared.term_counts, {});
 });
 
+test('novice mute force-fades a term; unmute restores it; question does not mute', async () => {
+  const dataDir = makeDataDir();
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-mute-proj-'));
+  const submit = (prompt) =>
+    runHook('user-prompt-submit.js', { session_id: SID, cwd, hook_event_name: 'UserPromptSubmit', prompt }, { dataDir });
+
+  // A term the user never wants explained again, even with zero exposures.
+  await submit('novice mute commit');
+  const muted = readSessionState(dataDir, SID);
+  assert.deepEqual(muted.muted_terms, ['commit']);
+
+  // Explaining it afterward must not un-mute it (mute is intentional and sticky).
+  await runHook('stop.js', stopPayload(COMMIT_EXPLAINED), { dataDir });
+  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+
+  // A plain question does not mute.
+  await submit('commit이 뭐예요');
+  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+
+  // Unmute restores normal fade behavior.
+  await submit('novice unmute commit');
+  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, []);
+
+  // Alias resolves to the canonical term.
+  await submit('novice mute 커밋');
+  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+
+  // Unknown target does not create a mute entry.
+  await submit('novice mute 없는용어xyz');
+  assert.deepEqual(readSessionState(dataDir, SID).muted_terms, ['commit']);
+});
+
+test('muted term appears in the injected capsule faded list', async () => {
+  const dataDir = makeDataDir();
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-mute-cap-'));
+  const submit = (prompt) =>
+    runHook('user-prompt-submit.js', { session_id: SID, cwd, hook_event_name: 'UserPromptSubmit', prompt }, { dataDir });
+
+  const r = await submit('novice mute branch');
+  const ctx = r.output?.hookSpecificOutput?.additionalContext ?? '';
+  assert.ok(ctx.includes('[NOVICE_STATE]'), 'mute should re-inject the capsule');
+  assert.ok(ctx.includes('branch'), 'muted term must show in the 설명 제외(faded) list');
+});
+
 test('alias-based reset resolves to canonical term', async () => {
   const dataDir = makeDataDir();
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-stop-proj-'));

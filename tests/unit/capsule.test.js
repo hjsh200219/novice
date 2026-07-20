@@ -69,6 +69,16 @@ test('computeFadedTerms honors threshold and reset list', () => {
   assert.deepEqual(computeFadedTerms({}, 3), []);
 });
 
+test('computeFadedTerms: muted terms are force-faded regardless of count and beat reset', () => {
+  const counts = { commit: 3, branch: 2, deploy: 5 };
+  // branch (count 2 < 3) is muted → faded anyway.
+  assert.deepEqual(computeFadedTerms(counts, 3, [], ['branch']), ['branch', 'commit', 'deploy']);
+  // a muted term with no exposures at all still fades.
+  assert.deepEqual(computeFadedTerms({}, 3, [], ['api']), ['api']);
+  // mute beats reset: commit reset (would un-fade) but also muted → stays faded.
+  assert.deepEqual(computeFadedTerms(counts, 3, ['commit'], ['commit']), ['commit', 'deploy']);
+});
+
 test('capsuleRevision is stable and sensitive to level/faded set', () => {
   const a = capsuleRevision(1, ['commit']);
   assert.equal(a, capsuleRevision(1, ['commit']));

@@ -14,8 +14,8 @@
       "repeat_failure_threshold": 2
     },
     "2": {
-      "fade_threshold": 1,
-      "term_explanation": "explain-first-occurrence",
+      "fade_threshold": 3,
+      "term_explanation": "explain-until-fade",
       "action_narration": "key-decisions-only",
       "visualization": "major-branches",
       "cost_loop_intervention": "repeat-detected",

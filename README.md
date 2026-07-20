@@ -18,12 +18,14 @@
 |---|---|
 | `/novice:mode` | 현재 level, 적용 범위, 안전 게이트 유지 여부 표시 |
 | `/novice:mode 1` | Level 1 (기본값) — 모든 용어에 설명 병기, 실행 전·후 해설 |
-| `/novice:mode 2` | Level 2 — 첫 1회만 설명, 핵심 결정만 해설 |
+| `/novice:mode 2` | Level 2 — 3회까지 설명, 핵심 결정만 해설 |
 | `/novice:mode 3` | Level 3 — 요청 시만 설명, 아키텍처·유저플로우 중심 |
 | `/novice:mode off` | novice 톤·설명·시각화 완전 제거 (안전 게이트는 유지) |
 
 자연어 별칭: 프롬프트 전체가 정확히 `novice 1|2|3|off`일 때만 모드가 바뀝니다.
-`novice reset all` / `novice reset <용어>`로 설명 카운터를 초기화합니다.
+`novice reset all` / `novice reset <용어>`로 설명 카운터를 초기화합니다(다시 처음부터 카운트).
+`novice mute <용어>`는 해당 용어를 영구 제외해 노출 횟수와 무관하게 설명을 끊고,
+`novice unmute <용어>`로 되돌립니다.
 "더 쉽게 설명해 줘" 같은 일반 문장은 현재 답변에만 영향을 주고 모드를 바꾸지 않습니다.
 
 용어는 순화하지 않습니다. `commit(현재 변경을 하나의 저장 지점으로 기록하는 것)`처럼
@@ -124,12 +126,14 @@ destructive commands, runaway cost, and secret exposure.
 |---|---|
 | `/novice:mode` | Show current level, scope, and whether the safety gate stays on |
 | `/novice:mode 1` | Level 1 (default) — explanation appended to every term, before/after narration |
-| `/novice:mode 2` | Level 2 — explain on first occurrence only, narrate key decisions only |
+| `/novice:mode 2` | Level 2 — explain up to 3 times, narrate key decisions only |
 | `/novice:mode 3` | Level 3 — explain on request only, architecture/user-flow focused |
 | `/novice:mode off` | Fully remove novice tone/explanations/visualization (safety gate stays on) |
 
 Natural-language aliases: the mode changes only when the entire prompt is exactly
-`novice 1|2|3|off`. `novice reset all` / `novice reset <term>` reset the explanation counters.
+`novice 1|2|3|off`. `novice reset all` / `novice reset <term>` reset the explanation counters
+(counting restarts from zero). `novice mute <term>` permanently excludes a term so its
+explanation stops regardless of exposure count, and `novice unmute <term>` undoes it.
 A general sentence like "explain it more simply" affects only the current answer and does not
 change the mode.
 

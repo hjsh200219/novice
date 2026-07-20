@@ -10,6 +10,8 @@ import { loadTerms, buildTombstone, capsuleForState } from './lib/capsule.js';
 const SLASH_MODE = /^\/novice:mode(\s[\s\S]*)?$/;
 const RESET_ALL = 'novice reset all';
 const RESET_ONE = /^novice reset (.+)$/;
+const MUTE_ONE = /^novice mute (.+)$/;
+const UNMUTE_ONE = /^novice unmute (.+)$/;
 const MODE_ALIAS = { 'novice 1': '1', 'novice 2': '2', 'novice 3': '3', 'novice off': 'off' };
 
 // trim → strip ONE trailing period (ASCII '.' or Korean '。') → collapse internal whitespace.
@@ -113,6 +115,34 @@ function main() {
       const rs = new Set(session.reset_terms || []);
       rs.add(term);
       session.reset_terms = [...rs];
+      saveSession(sessionId, session);
+      emitCurrentOrSkip(sessionId, getProjectConfig(cwd), session);
+      return;
+    }
+    // Unknown target → treat as an ordinary prompt (fall through).
+  }
+
+  // (c) Mute one term — force-fade it permanently (explanations stop regardless of count).
+  const mute = key.match(MUTE_ONE);
+  if (mute) {
+    const term = resolveTerm(mute[1]);
+    if (term) {
+      const ms = new Set(session.muted_terms || []);
+      ms.add(term);
+      session.muted_terms = [...ms];
+      saveSession(sessionId, session);
+      emitCurrentOrSkip(sessionId, getProjectConfig(cwd), session);
+      return;
+    }
+    // Unknown target → treat as an ordinary prompt (fall through).
+  }
+
+  // (c) Unmute one term — undo a previous mute (explanations resume per the fade rule).
+  const unmute = key.match(UNMUTE_ONE);
+  if (unmute) {
+    const term = resolveTerm(unmute[1]);
+    if (term) {
+      session.muted_terms = (session.muted_terms || []).filter((x) => x !== term);
       saveSession(sessionId, session);
       emitCurrentOrSkip(sessionId, getProjectConfig(cwd), session);
       return;

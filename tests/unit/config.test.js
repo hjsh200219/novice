@@ -54,11 +54,11 @@ test('terms are unique across term names and aliases', () => {
   }
 });
 
-test('levels.json defines fade thresholds 3/1/0 and payload caps', () => {
+test('levels.json defines fade thresholds 3/3/0 and payload caps', () => {
   const levels = readJson('config/levels.json');
   assert.equal(levels.default_level, 1);
   assert.equal(levels.levels['1'].fade_threshold, 3);
-  assert.equal(levels.levels['2'].fade_threshold, 1);
+  assert.equal(levels.levels['2'].fade_threshold, 3);
   assert.equal(levels.levels['3'].fade_threshold, 0);
   assert.equal(levels.capsule_max_chars, 800);
   assert.equal(levels.tombstone_max_chars, 300);

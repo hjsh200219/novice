@@ -176,6 +176,7 @@ export function defaultSessionState() {
     schema_version: 1,
     term_counts: {},
     reset_terms: [],
+    muted_terms: [],
     last_message_hash: null,
     capsule_revision: null,
     glossary_revision: null,
