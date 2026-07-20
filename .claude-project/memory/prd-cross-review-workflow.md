@@ -5,7 +5,7 @@ type: project
 created: 2026-07-20
 ---
 
-`/Users/hoshin/workspace/SHC/novice`는 비개발자 입문자용 Claude Code "novice" 플러그인 프로젝트다. 2026-07-20 기준 docs/PRD.md는 revision 9, status는 여전히 `pending approval`(공식 승인 전이지만 **구현은 이미 완료** — 10개 스토리 전부 PASS, npm test 123/123 green). 구현은 단계 분할 없이 전체 일괄 개발로 결정됨(rev5). 외부설정은 secret 미취급 **2-tier CLI 부트스트랩**(rev8 절충, 사용자 결정): Tier 1 검토 manifest(vercel/gh/supabase) 자동, Tier 2 그 외 CLI는 공식 근거 제시 + 사용자 승인 후 동일 engine — 개수 제한 없음. rev9는 plaintext 로그인 중단 정책을 **provider별 manifest 정책**으로 명확화(사용자 확정) — 상세 [[bootstrap-credential-policy-per-provider]].
+`/Users/hoshin/workspace/SHC/novice`는 비개발자 입문자용 Claude Code "novice" 플러그인 프로젝트다. 2026-07-20 기준 docs/PRD.md는 **revision 11**, status `implemented (MVP)` — 구현 완료, **npm test 149/149 green**, marketplace 등록·실제 설치까지 완료(novice@novice enabled). 구현은 단계 분할 없이 전체 일괄 개발(rev5). 외부설정은 secret 미취급 **2-tier CLI 부트스트랩**: Tier 1 검토 manifest(vercel/gh/supabase) 자동, Tier 2 그 외 CLI는 공식 근거+사용자 승인. rev9 plaintext 정책 provider별([[bootstrap-credential-policy-per-provider]]), rev10 Level2 fade 1→3·mute(교차세션)·MCP/Chrome capability 라우터·latency 벤치, rev11 MCP 런타임 등록+명시 동의 경로·CLI Tier2 동의. 하네스 셋업+GC 완료: 성숙도 **L4(76.75)**, zero-dep 유지(eslint/knip/husky 미채택, verify-docs + node 내장 coverage로 대체).
 
 작업 방식: PRD는 Codex와 Claude의 **교차 검토(cross-review)**로 발전시킨다. 플랫폼 사실 검증 4라운드 끝에 판정 기준이 확정됨: 문서 인용(1차, 오류) → SDK 타입(3차, snapshot이 runtime보다 낡아 오판) → **설치 runtime 바이너리 grep(4차, 확정)**. rev7의 codex 플랫폼 주장(PostToolBatch·expansion block·범용 updatedToolOutput)은 전부 runtime 2.1.215에서 사실로 확인됨. 상세: [[claude-code-plugin-platform-facts]].
 

@@ -1,24 +1,24 @@
 ---
-created: 2026-07-20T19:00:00+09:00
+created: 2026-07-20T19:30:00+09:00
 project: novice
-summary: novice 플러그인 구현 완료 (PRD rev 11) + 하네스 셋업/GC 완료 — 테스트 149/149, 성숙도 L4(76.75), 설치·활성화됨
+summary: novice 플러그인 구현+하네스+GC+후속조치 완료 (PRD rev 11) — 테스트 149/149, 성숙도 L4, 설치·활성화, 최신 커밋 f9ba85e
 ---
 
 ## Session Digest
-novice 플러그인을 PRD rev 8→11로 전 범위 구현하고 marketplace 등록·실제 설치까지 마쳤다. 이후 하네스 엔지니어링 셋업(AGENTS.md 맵·ARCHITECTURE·docs/harness·verify-docs)과 GC(3-에이전트 감사 + 회의적 채점)를 수행했다. rev 8→11 주요 변경: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터(정적 allowlist + 런타임 등록·명시 동의), CLI Tier 2 명시 동의, plaintext credential 정책(vercel 고지형/gh·supabase 중단형), latency 벤치·hook 순서 실측, plugin.json hooks 키 제거(중복 로드 버그 수정).
+novice 플러그인을 PRD rev 8→11로 전 범위 구현하고 marketplace 등록·실제 설치까지 마쳤다. 하네스 셋업(AGENTS 맵·ARCHITECTURE·docs/harness·verify-docs) + GC(3-에이전트 감사, 성숙도 L4/76.75) 후, GC 수동 검토 3건을 처리했다: pre-tool-use.js 472→54줄 thin hook화(분석은 scripts/lib/safety.js로 분리, 동작 무변경), zero-dep coverage(node 내장), husky/logger는 zero-dep·N/A로 불채택. rev 8→11 주요 변경: Level 2 fade 1→3, mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터(정적 allowlist + 런타임 등록·명시 동의), CLI Tier 2 동의, plaintext credential 정책(vercel 고지형/gh·supabase 중단형), latency 벤치·hook 순서 실측, plugin.json hooks 키 제거(중복 로드 버그).
 
 ## Progress
 - 완료: PRD rev 11 전 범위 구현, 테스트 149/149 (unit 11 + integration 4), 외부 dependency 0
-- 완료: marketplace 등록(.claude-plugin/marketplace.json), user scope 설치·활성화(novice@novice ✔ enabled)
-- 완료: 하네스 셋업(AGENTS.md 51줄 맵, ARCHITECTURE.md, docs/harness 5종, verify-docs.mjs pretest 연결, permissions.deny)
-- 완료: 하네스 GC — 문서 신선도 96%, 아키텍처 위반 0, 성숙도 L4(76.75), P8만 통과선 미달
+- 완료: marketplace 등록 + user scope 설치·활성화(novice@novice ✔ enabled)
+- 완료: 하네스 셋업 + GC baseline(L4/76.75) + GC 수동 검토 3건 처리
+- 완료: 안전 분석 scripts/lib/safety.js 분리(pre-tool-use 54줄), zero-dep coverage(line ~95%), zero-dep CI(.github/workflows/test.yml)
 - 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(계정), MCP/clear/compact 실측 payload(headless 불가)
 
 ## Next Steps
 1. 새 세션에서 실사용 스모크 테스트 (`/plugin` → novice enabled, `/novice:mode`, 용어 병기, 안전 게이트)
-2. P8 gap: zero-dep node:test CI(GitHub Actions) — 이번 GC에서 추가됨. 실제 push CI 동작 확인
+2. GitHub Actions CI 실제 push 동작 확인 (첫 워크플로 run)
 3. product beta 준비 (concierge n≥5, moderated n≥20)
-4. (선택) `/sh:harness-setup --infra`로 coverage/logger/husky — zero-dep 벗어나므로 명시 옵트인만
+4. (선택) 재-GC로 성숙도 재채점 — safety.js 분리·coverage·CI 반영으로 P7/P8 상승 예상
 
 ## Blockers
 - 없음 (남은 항목은 사람·환경 필요, 기술 블록 아님)
@@ -33,6 +33,6 @@ novice 플러그인을 PRD rev 8→11로 전 범위 구현하고 marketplace 등
 - tests/fixtures의 토큰(ghp_/AKIA)은 전부 synthetic.
 
 ## Files Touched
-- 코드: scripts/(hook 10 + lib 8 + bootstrap-engine + verify-docs), config/(5 JSON + manifest 3), hooks/hooks.json
-- 문서: AGENTS.md, ARCHITECTURE.md, CLAUDE.md(@AGENTS.md), README.md(한/영), docs/(PRD rev11, harness 5, QUALITY, design-docs 2, tech-debt), .claude-project/(HANDOFF, memory)
-- 플러그인: .claude-plugin/(plugin.json, marketplace.json), .claude/settings.json(permissions.deny)
+- 코드: scripts/(hook 10 + lib 9[safety.js 포함] + bootstrap-engine + verify-docs.mjs), config/(5 JSON + manifest 3), hooks/hooks.json
+- 문서: AGENTS.md, ARCHITECTURE.md, CLAUDE.md(@AGENTS.md), README.md(한/영), docs/(PRD rev11, harness 5, QUALITY, design-docs 2, tech-debt), .claude-project/(HANDOFF, memory 6)
+- 플러그인/CI: .claude-plugin/(plugin.json, marketplace.json), .claude/settings.json, .github/workflows/test.yml

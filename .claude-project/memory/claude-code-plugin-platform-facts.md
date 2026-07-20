@@ -28,6 +28,13 @@ created: 2026-07-20
 - `--plugin-dir <plugin>`로 로드 시 project override가 `~/.claude/plugins/data/<plugin>/` (파일 0600 / 디렉터리 0700)에 기록되고 `${CLAUDE_PLUGIN_DATA}`가 이를 가리킴. E2E 확인: `/novice:mode 2` → expansion hook → override {level:2} → 모델 출력에 capsule 반영.
 - **headless로 캡처 불가**(문서 기반 fixture로만 유지): `SessionStart` clear/compact source, MCP 파괴적 payload.
 
+**설치/배포 실측 (6차, 2026-07-20 — 실제 marketplace 설치)**
+- `plugin.json`에 **`hooks` 키를 넣으면 안 됨** — `hooks/hooks.json`은 표준 경로로 자동 로드된다. manifest에서 같은 파일을 또 가리키면 `plugins list`에서 `Duplicate hooks file detected` 로드 실패(Status: ✘ failed to load). `--plugin-dir`로는 안 드러나고 실제 설치해야 잡힘.
+- marketplace `name`에 **슬래시 불가** (`Marketplace name cannot contain path separators`). add 참조(`owner/repo`, 예 `hjsh200219/novice`)와 내부 name(슬러그, 예 `novice`)은 별개.
+- **bare-name 설치 가능**: `/plugin marketplace add owner/repo` 후 `/plugin install <name>` (이름 유일하면 `@marketplace` 생략). 내부적으로 `name@marketplace`로 해석.
+- 설치 시 `--config KEY=VALUE`로 userConfig 지정. 미지정 시 "N userConfig options not yet set" 경고.
+- hook/skill은 **새 세션부터** 로드됨 (설치 세션엔 미반영).
+
 **검증 방법 (재사용)**
 ```
 strings -n 8 ~/.local/share/claude/versions/$(claude --version | cut -d' ' -f1) > /tmp/cc-strings.txt

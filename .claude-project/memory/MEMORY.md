@@ -5,4 +5,5 @@
 - [prd-cross-review-workflow](prd-cross-review-workflow.md) — Novice PRD는 Codex+Claude 교차 검토로 발전, Claude는 문서 사실 검증 담당 (rev9, 구현 완료 123 tests)
 - [bootstrap-credential-policy-per-provider](bootstrap-credential-policy-per-provider.md) — 부트스트랩 plaintext 로그인 정책은 provider별 manifest(고지형 vercel vs 중단형 gh/supabase)
 - [omc-parallel-subagent-session-limit-recovery](omc-parallel-subagent-session-limit-recovery.md) — 병렬 subagent가 session limit에 걸리면 부분 산출물 회수 후 인라인 전환
+- [zero-dep-harness-approach](zero-dep-harness-approach.md) — zero-dep 프로젝트 하네스: eslint/knip/husky 대신 verify-docs + node 내장 coverage/CI
 
