@@ -22,11 +22,22 @@
 | `/novice:mode 3` | Level 3 — 요청 시만 설명, 아키텍처·유저플로우 중심 |
 | `/novice:mode off` | novice 톤·설명·시각화 완전 제거 (안전 게이트는 유지) |
 
-자연어 별칭: 프롬프트 전체가 정확히 `novice 1|2|3|off`일 때만 모드가 바뀝니다.
-`novice reset all` / `novice reset <용어>`로 설명 카운터를 초기화합니다(다시 처음부터 카운트).
-`novice mute <용어>`는 해당 용어를 영구 제외해 노출 횟수와 무관하게 설명을 끊고,
-`novice unmute <용어>`로 되돌립니다. mute는 프로젝트 단위로 저장되어 **세션이 바뀌어도 유지**됩니다.
-"더 쉽게 설명해 줘" 같은 일반 문장은 현재 답변에만 영향을 주고 모드를 바꾸지 않습니다.
+### 자연어 명령
+
+프롬프트 **전체가 정확히** 아래 형태와 일치할 때만 동작합니다(앞뒤 공백·마침표만 허용).
+"더 쉽게 설명해 줘" 같은 일반 문장은 현재 답변에만 영향을 주고 설정을 바꾸지 않습니다.
+
+| 명령 | 동작 | 예시 |
+|---|---|---|
+| `novice 1` / `novice 2` / `novice 3` / `novice off` | 모드 전환 (`/novice:mode N`과 동일) | `novice 2` |
+| `novice reset all` | 모든 용어의 설명 카운터 초기화 (다시 처음부터 N회 설명) | `novice reset all` |
+| `novice reset <용어>` | 특정 용어만 카운터 초기화 | `novice reset commit` |
+| `novice mute <용어>` | 특정 용어를 **영구 제외** — 노출 횟수와 무관하게 설명 중단 | `novice mute commit` |
+| `novice unmute <용어>` | mute 해제 — 다시 fade 규칙에 따라 설명 | `novice unmute commit` |
+
+- **reset vs mute**: `reset`은 카운터를 0으로 되돌려 **다시** N회 설명하게 하고, `mute`는 지금 즉시 설명을 끊고 계속 끊어 둡니다.
+- **mute는 프로젝트 단위**로 저장되어 세션이 바뀌어도 유지됩니다. reset·용어 카운터는 세션 스코프입니다.
+- 용어(예: `commit`)는 한글 별칭(`커밋`)으로도 지정할 수 있고, 사전에 없는 용어는 무시됩니다.
 
 용어는 순화하지 않습니다. `commit(현재 변경을 하나의 저장 지점으로 기록하는 것)`처럼
 실제 용어 뒤에 설명을 병기하고, 세션에서 충분히 노출된 용어(Level 1 기준 3회)는 설명을 걷어냅니다.
@@ -142,13 +153,25 @@ destructive commands, runaway cost, and secret exposure.
 | `/novice:mode 3` | Level 3 — explain on request only, architecture/user-flow focused |
 | `/novice:mode off` | Fully remove novice tone/explanations/visualization (safety gate stays on) |
 
-Natural-language aliases: the mode changes only when the entire prompt is exactly
-`novice 1|2|3|off`. `novice reset all` / `novice reset <term>` reset the explanation counters
-(counting restarts from zero). `novice mute <term>` permanently excludes a term so its
-explanation stops regardless of exposure count, and `novice unmute <term>` undoes it. Mute is
-stored per project, so it **persists across sessions**.
-A general sentence like "explain it more simply" affects only the current answer and does not
-change the mode.
+### Natural-language commands
+
+These act only when the **entire prompt matches exactly** (leading/trailing whitespace and a
+trailing period are tolerated). A general sentence like "explain it more simply" affects only
+the current answer and does not change any setting.
+
+| Command | Behavior | Example |
+|---|---|---|
+| `novice 1` / `novice 2` / `novice 3` / `novice off` | Switch mode (same as `/novice:mode N`) | `novice 2` |
+| `novice reset all` | Reset every term's explanation counter (explain N times again) | `novice reset all` |
+| `novice reset <term>` | Reset one term's counter | `novice reset commit` |
+| `novice mute <term>` | **Permanently exclude** a term — explanation stops regardless of count | `novice mute commit` |
+| `novice unmute <term>` | Undo a mute — explanation resumes per the fade rule | `novice unmute commit` |
+
+- **reset vs mute**: `reset` restarts the counter from zero so the term is explained N more
+  times; `mute` stops the explanation right now and keeps it off.
+- **mute is stored per project**, so it persists across sessions. reset and the term counters
+  are session-scoped.
+- A term (e.g. `commit`) can be named by its Korean alias (`커밋`) too; unknown terms are ignored.
 
 Terms are never simplified away. It appends an explanation after the real term, as in
 `commit (recording the current changes as one save point)`, and once a term has appeared
