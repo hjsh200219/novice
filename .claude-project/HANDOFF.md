@@ -1,31 +1,57 @@
 ---
-created: 2026-07-20T08:31:00+09:00
+created: 2026-07-20T09:15:00+09:00
 project: novice
-summary: ralplan 합의(Critic APPROVE)로 바이브 코딩 입문자용 플러그인 PRD v1 확정, repo 신설·푸시
+summary: PRD revision 3 확정 (codex·claude 교차 리뷰 + 플랫폼 사실 검증 반영), 구현은 승인 대기
 ---
 
 ## Session Digest
-/ralplan으로 "바이브 코딩 입문자용 Claude Code 플러그인" 계획 수립. 리서치 2건(입문자 페인포인트 F1-F18 · 플러그인 메커니즘) → Planner 초안 → Architect 1차(P0 2건) → Critic 1차(ITERATE) → 개정 2회 → Architect 2차 → Critic 2차 APPROVE. PRD를 docs/PRD.md로 저장하고 GitHub repo(hjsh200219/novice, public — 플러그인 설치 배포용) 신설·푸시. 구현은 미착수(사용자 실행 승인 대기).
+
+PRD revision 2(Codex 리뷰본)를 Claude가 공식 Claude Code 문서 대조로 교차 검증한 후 revision 3으로 확정 (commit 7b12579, 푸시 완료). 사실 오류 1건(UserPromptExpansion 필드), 설계 갭 4건(비용 루프 hook 미배정, 자연어 트리거 오탐, off 즉시성 충돌, headless 정책), 문서 품질 3건(원 요구 verbatim, 요구 6 완화 표기, 시크릿 스캔 메커니즘)을 모두 반영. 구현은 여전히 사용자 승인 대기.
 
 ## Progress
-- [DONE] PRD v1 합의 완료 (`docs/PRD.md`, status: pending approval)
-- [DONE] GitHub repo 생성·푸시 (`git@github.com:hjsh200219/novice.git`, main)
-- [TODO] 구현 착수 (Phase 0~2 = P0 MVP) — 사용자 승인 필요
+
+- [DONE] PRD revision 3 확정·푸시 (commit 7b12579)
+  - UserPromptExpansion 필드 교정: `command_name`/`command_input`/`expanded_prompt` (`command_args`·`command_source`는 미존재)
+  - invalid-args block 가능 여부 → Phase 0 spike 실측 항목으로 이동 (불가 시 skill validation fallback)
+  - 비용·반복 루프 gate를 `PostToolUse`에 정식 배정 (hook 책임표·위협모델·Phase 2 기준 연동)
+  - 자연어 전환·reset trigger 고정 목록 매칭 한정 + 오탐 리스크 행 추가
+  - off 즉시성 통일: 두 경로 모두 capsule 주입 전 state 갱신 → 해당 turn부터 반영
+  - headless(`claude -p`) 정책: ask→deny 상향, defer 미사용
+  - 시크릿 스캔 메커니즘 복원: `git diff --cached` + `git diff HEAD` 병행 (`-am`/path commit 우회 대응)
+  - 부록 B 신설: 사용자 원 요구 7개 verbatim 복원
+  - 요구 6 커버리지 "충족(완화)" 표기 + 사유 명시
+- [DONE] 플랫폼 사실 검증 (공식 docs 대조) — 결과는 `.claude-project/memory/` 참조
+- [TODO] 구현 착수 (Phase 0 platform contract spike부터) — 사용자 승인 필요
 
 ## Next Steps
-1. 사용자 실행 승인 후 team(병렬) 또는 ralph(순차)로 Phase 0 착수
-2. 착수 전 Open Questions 결정: 플러그인 공식 이름, 마켓플레이스 배포 여부, hook 언어(Node vs bash), `CLAUDE_PLUGIN_DATA` 실 환경변수명 검증
-3. Phase 0: plugin.json(userConfig) + output-styles/beginner-base.md + skills/beginner-mode/SKILL.md
+
+1. **사용자 실행 승인** — Phase 0~2 (P0 MVP) 착수 전제
+2. **Phase 0 — platform contract spike**
+   - `UserPromptExpansion`이 invalid args를 실행 없이 block할 수 있는지 실측 (불가 시 skill 안내문 validation fallback + Phase 1 기준 갱신)
+   - 최소 `plugin.json`(userConfig: default_level, novice_enabled) + hook fixture harness + `config/*.json` schema
+   - `SessionStart(source=compact)` state 재주입 실측
+   - novice on/off·plugin enable/disable 전 경로에서 사용자 output style 무변경 검증
+   - `${CLAUDE_PLUGIN_DATA}`에 project/session state 생성 확인 (plugin root 쓰기 금지)
+3. **Phase 1 — mode·용어 core**
+   - `/novice:mode`와 자연어 별칭이 같은 state writer 사용
+   - 1→2→3→off 전환 capsule 정확도, 800자 상한, off 시 novice context 0건
+   - `Stop.last_assistant_message` 기반 증분 카운트 (전체 transcript 재파싱 금지)
+   - 고정 목록 밖 문장 무반응 fixture
 
 ## Blockers
-- 없음 (구현은 승인 대기일 뿐)
+
+- 없음 (구현은 사용자 승인 대기)
 
 ## Watch Out
-- 아키텍처 seam 규율: 레벨 가변 내용을 output-style에 절대 넣지 말 것(세션당 1회 로드 제약) — PRD §5.2
-- 안전 게이트는 PreToolUse hook 강제 차단(off 무관 always-on), 텍스트 권고로 구현하면 안 됨 — PRD §4.4
-- MVP 용어 카운터는 stateless(상태 파일 없음, transcript 세션 내 카운트). Stop hook·explained-terms.json은 P1 — PRD Open Questions [결정됨]
-- caveman 선행 패턴 위치: `~/.claude/plugins/cache/caveman/caveman/25d22f864ad6/src/hooks/` (transcript_path 선례 = caveman-mode-tracker.js:50)
+
+- **output style 사용 금지 결정됨** (revision 2에서 확정) — `force-for-plugin`은 novice off와 양립 불가. 레벨 가변 내용은 hook capsule로만.
+- **안전 게이트는 PreToolUse 강제 차단** (novice off 무관 always-on, 단 plugin disable 시 소멸) — 텍스트 권고 구현 금지.
+- **용어 카운터는 stateful** (revision 2에서 변경, 구 HANDOFF의 "stateless MVP" 경고 OBSOLETE) — `Stop.last_assistant_message` + `${CLAUDE_PLUGIN_DATA}/sessions/<session_id>.json`. atomic write·symlink 거부·0600 필수.
+- **플랫폼 사실은 검증 완료** — `${CLAUDE_PLUGIN_DATA}`(`~/.claude/plugins/data/{id}/`), `userConfig`, `Stop.last_assistant_message`, SessionStart 4종 source 모두 공식 문서 확인됨 (2026-07-20). 상세는 memory 파일. 단 invalid-args block은 미검증.
+- **caveman 선행 패턴 참고**: `~/.claude/plugins/cache/caveman/caveman/*/src/hooks/` (transcript 파싱 선례 caveman-mode-tracker.js:50 — 단 revision 3 설계는 transcript 재파싱 대신 last_assistant_message 사용).
 
 ## Files Touched
-- docs/PRD.md (신규, 합의 완료본)
-- 원본: workspace/.omc/plans/2026-07-20-vibe-beginner-plugin-prd.md (동일 내용)
+
+- `docs/PRD.md` (revision 2 → 3)
+- `.claude-project/memory/` (신규 — 플랫폼 검증 사실 저장)
+- `.claude-project/HANDOFF.md` (본 파일 갱신)
