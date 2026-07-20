@@ -11,7 +11,14 @@
 
 ## 의도적 결정 (부채 아님, 기록용)
 - ESLint 레이어 강제 미채택 — zero-dep 원칙. `layer-rules.md` + `verify-docs`로 대체.
-- 운영 인프라(gc.sh/knip/coverage/husky) 미설치 — zero-dep + node:test로 충분. 필요 시 `/sh:harness-setup --infra`.
+- coverage — node 내장 `--experimental-test-coverage`(`npm run test:coverage`)로 zero-dep 달성. c8/vitest 미도입.
+- CI — zero-dep `node --test` GitHub Actions(`.github/workflows/test.yml`).
+- **husky/lint-staged 미채택** — 외부 의존성으로 zero-dep 위배. pre-commit 게이트 역할은 CI + `pretest`(verify-docs)로 대체.
+- **구조화 logger / withErrorHandler 미채택** — API 라우트·프론트가 없는 hook 플러그인이라 대상 없음(N/A). 필요 시 `/sh:harness-setup --infra`.
+
+## GC baseline (2026-07-20) 후속 조치 완료
+- pre-tool-use.js 472줄 → 54줄(thin hook) + `scripts/lib/safety.js`(분석 분리). 동작 무변경, 테스트 149/149.
+- dead export `_resetCaches` 제거. verify-docs에 lib 레지스트리·export-import 검사 추가.
 
 ## P1/P2 후보 (PRD §6)
 - P1: 교차 세션 용어 학습(자동 fade 누적 — 단 명시적 mute는 이미 교차 세션), statusline nudge, 비용 preview.

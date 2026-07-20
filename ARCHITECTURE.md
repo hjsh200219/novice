@@ -36,6 +36,7 @@ tests/ (검증)
 | `manifest.js` | bootstrap manifest 검증·로드 (Tier 1/2) |
 | `capability-router.js` | CLI→MCP→Chrome→guided manual 경로 결정·검증·다운그레이드 |
 | `fingerprint.js` | tool 호출 fingerprint (post-tool event 중복 제거) |
+| `safety.js` | PreToolUse 안전 분석 (rm·git·deploy·MCP 판정, grammar+secret 소비) |
 
 ## hook 핸들러 맵 (L3)
 | hook | 파일 | 책임 |
