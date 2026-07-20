@@ -12,6 +12,25 @@
   실제 2.1.215 runtime에서 hook payload 캡처 + `--plugin-dir` live E2E 검증 완료.
   남은 것은 사람 참가자가 필요한 product beta 검증(concierge/moderated).
 
+## 설치
+
+Claude Code 안에서 marketplace를 등록한 뒤 설치합니다:
+
+```
+/plugin marketplace add hjsh200219/novice
+/plugin install novice@novice
+/reload-plugins
+```
+
+- 설치 확인: `/plugin` 목록에서 novice가 enabled인지 확인하고, `/novice`를 실행해
+  상태 대시보드가 나오면 정상입니다.
+- **업데이트**: 설치본은 캐시 복사본이라 자동 갱신되지 않습니다. `/plugin` 메뉴에서
+  novice marketplace를 update한 뒤 플러그인을 재설치하세요.
+- 로컬 개발·수정 테스트: 리포를 clone한 뒤 `claude --plugin-dir <리포 경로>`로
+  설치 없이 로드할 수 있습니다.
+- 제거: `/plugin uninstall novice` — 제거하면 안전 게이트도 함께 사라집니다
+  (아래 위협 모델 참조).
+
 ## 사용법
 
 | 명령 | 동작 |
@@ -171,6 +190,25 @@ destructive commands, runaway cost, and secret exposure.
 - Status: MVP implemented — 147 tests passing (zero external
   dependencies). Verified against a real 2.1.215 runtime via hook-payload capture and a
   `--plugin-dir` live E2E. What remains is the product beta, which needs human participants.
+
+## Installation
+
+Register the marketplace inside Claude Code, then install:
+
+```
+/plugin marketplace add hjsh200219/novice
+/plugin install novice@novice
+/reload-plugins
+```
+
+- Verify: check that novice is enabled in `/plugin`, then run `/novice` — a status
+  dashboard means it's working.
+- **Updating**: the installed copy is a cached snapshot and does not auto-update. Update the
+  novice marketplace in the `/plugin` menu, then reinstall the plugin.
+- Local development: clone the repo and load it without installing via
+  `claude --plugin-dir <repo path>`.
+- Uninstall: `/plugin uninstall novice` — removing the plugin also removes the safety gate
+  (see the threat model below).
 
 ## Usage
 
