@@ -2,9 +2,9 @@
 status: implemented (MVP) — product beta 미검증
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-20
-revision: 10
-mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프) 추가, MCP·Chrome capability 라우터 구현, latency 벤치·hook 순서 실측 (사용자 결정 2026-07-20)
-implementation: 완료 기준 A~D 충족, 테스트 145/145 통과 (unit 11 + integration 4, 외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
+revision: 11
+mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20)
+implementation: 완료 기준 A~D 충족, 테스트 149/149 통과 (unit 11 + integration 4, 외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -238,8 +238,8 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 
 경로 선택·검증·다운그레이드는 `scripts/lib/capability-router.js`가 결정하고, `scripts/bootstrap-engine.js`의 `setupService`가 진입점이다. `cli` 경로만 manifest 엔진을 직접 실행하고 mcp·chrome·guided_manual은 plan(안내)만 반환한다.
 
-- capability별 우선순위는 CLI → allowlisted 공식 MCP → visible Chrome → guided manual이다. `resolveCapability`가 이 순서로 가용성을 검사해 첫 사용 가능 경로를 고르고, CLI 설치를 거부하거나 manifest preflight가 실패하면 다음 경로로 낮춘다. provisioning·deploy·env_setup처럼 `guided_manual`로 고정된 capability는 즉시 guided manual로 간다.
-- MCP는 `validateMcpCandidate`가 `mcp_allowlist`의 server·transport·publisher·tool과 정확히 일치하고 provenance가 hook input에서 verified인 엔트리만 허용한다. 하나라도 어긋나거나 provenance를 검증할 수 없으면 자동 실행 대상에서 제외한다. **기본 allowlist는 비어 있어 아무 MCP도 자동 실행되지 않는다.** MCP tool 실제 호출은 모델이 하고 `PreToolUse` 안전 게이트가 계속 검사한다.
+- capability별 우선순위는 CLI → allowlisted 공식 MCP → visible Chrome → guided manual이다. `resolveCapability`가 이 순서로 가용성을 검사해 첫 사용 가능 경로를 고른다. CLI는 Tier 1 preflight가 통과했거나(`cliAvailable`) **사용자가 명시적으로 동의한 Tier 2 CLI**(`cliUserConsent` — ad-hoc manifest `confirmed_by_user`)일 때 사용 가능하다. CLI 설치를 거부하거나 preflight가 실패하면 다음 경로로 낮추고, provisioning·deploy·env_setup처럼 `guided_manual`로 고정된 capability는 즉시 guided manual로 간다.
+- MCP 허용은 `validateMcpCandidate`의 **두 경로**다. (1) **정적 allowlist**: `mcp_allowlist`의 server·transport·publisher·tool과 정확히 일치하고 provenance가 verified인 사전 검토 엔트리 — 재확인 없이 사용. (2) **런타임 등록 + 명시 동의**: 사용자가 자신의 Claude runtime에 이미 등록한 서버(`registered:true` — 등록 자체가 provenance)이고 이번 작업에 명시적으로 동의(`userConsent:true`)한 경우, 동의한 tool 범위 안에서 사용. 둘 다 아니면 제외한다. **기본 allowlist는 비어 있어, 사용자가 등록·동의하지 않는 한 아무 MCP도 자동 실행되지 않는다.** 어느 경로든 MCP tool 실제 호출은 모델이 하고 `PreToolUse` 안전 게이트가 계속 검사하며, MCP 서버를 자동 설치하지 않는다.
 - Chrome fallback은 `chromeDecision`이 공식 Claude in Chrome 연결·비(非)제3자 provider일 때만 visible mode로 사용한다. 미연결·제3자 provider 환경이면 guided manual로 낮춘다. login/CAPTCHA/MFA와 최종 submit은 사용자가 직접 한다.
 - **라우터 한계(정직 표기):** 플러그인은 경로 결정·검증·다운그레이드·plan 생성까지만 한다. MCP 서버를 spawn하거나 MCP tool을 호출하거나 Chrome을 직접 조작하지 않는다(비목표: 임의 MCP 자동 설치·설정 금지).
 
@@ -394,7 +394,7 @@ novice/
 
 > 구현은 단계를 나누지 않고 **전체 기능을 한 번에 개발**한다(사용자 결정, revision 5). 아래 완료 기준은 순차 gate가 아니라 배포 판정용 단일 체크리스트이며 영역별로 묶었을 뿐이다. 단, 플랫폼 contract fixture 캡처(A)는 나머지 구현의 전제이므로 착수 직후 가장 먼저 수행한다.
 
-> **구현 상태 (2026-07-20):** 완료 기준 A~D 전 항목 구현·통과. 테스트 145/145 (unit 11 + integration 4, 외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
+> **구현 상태 (2026-07-20):** 완료 기준 A~D 전 항목 구현·통과. 테스트 149/149 (unit 11 + integration 4, 외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
 
 **산출물 (일괄)**
 
@@ -452,7 +452,7 @@ novice/
 - Tier 2 fixture: 미등재 CLI에서 ad-hoc manifest(근거 URL·coordinate·argv)가 화면에 제시되고, 사용자 승인 시에만 동일 engine으로 설치·로그인이 진행되며, 승인 거부·공식 근거 미확인 시 guided manual로 넘어간다.
 - 로그인/CAPTCHA/MFA는 사용자가 직접 완료한다.
 - capability 라우터가 CLI→MCP→Chrome→guided manual 우선순위로 경로를 고르고, CLI 거부·preflight 실패 시 다음 경로로 낮춘다. `guided_manual` 고정 capability는 즉시 guided manual로 간다.
-- MCP allowlist 밖 server, transport·publisher 불일치, 미검증 provenance, allowlist 밖 tool은 자동 실행되지 않는다(경로에서 제외). 기본 allowlist가 비어 있으면 MCP 경로는 항상 skip된다. Chrome 미연결·제3자 provider 환경에서 guided manual로 정상 downgrade한다.
+- MCP 허용은 두 경로: (1) 정적 allowlist 정확 일치 + verified provenance, (2) 런타임 등록 서버 + 명시 동의(동의한 tool 범위). transport·publisher 불일치, 미검증 provenance, allowlist 밖 tool, 등록만 있고 동의 없음, 동의만 있고 등록 없음은 모두 경로에서 제외된다. 기본 allowlist가 비어 있으면 사용자 등록·동의 없이는 MCP 경로가 항상 skip된다. Chrome 미연결·제3자 provider 환경에서 guided manual로 정상 downgrade한다.
 - 라우터는 경로 결정·검증·다운그레이드까지만 수행하고 MCP tool 호출·Chrome 조작은 하지 않는다(모델·사용자가 수행, 안전 게이트가 MCP 호출을 계속 가드).
 
 ### 검증 — product beta (구현 완료 후)
@@ -510,7 +510,9 @@ novice/
 - 초기 용어 사전은 32개로 시작한다: Git 8, terminal/filesystem 6, web/app 6, database/auth 6, deploy/security 6.
 - fade 기본값은 Level 1 설명 3회, Level 2 설명 3회, Level 3 자동 설명 0회다(사용자 결정 2026-07-20, Level 2를 1회→3회로 변경). 용어별 `novice mute`는 이 카운터와 무관하게 즉시 영구 제외한다.
 - `novice mute`/`unmute`는 프로젝트 override(`projects/<hash>.json`의 `muted_terms`)에 저장해 **교차 세션 지속**한다(사용자 결정 2026-07-20). reset·용어 카운터는 세션 스코프로 유지한다.
-- MCP·Chrome 경로는 `capability-router`로 구현한다(경로 결정·allowlist/provenance 검증·다운그레이드·plan 생성까지). 플러그인은 MCP 서버 spawn·tool 호출·Chrome 조작을 하지 않고, 기본 `mcp_allowlist`는 비어 있어 자동 실행이 0이다.
+- MCP·Chrome 경로는 `capability-router`로 구현한다(경로 결정·검증·다운그레이드·plan 생성까지). 플러그인은 MCP 서버 spawn·tool 호출·Chrome 조작을 하지 않는다.
+- MCP 허용 기준(사용자 결정 2026-07-20): 정적 allowlist 외에, **사용자가 Claude runtime에 이미 등록한 서버 + 이번 작업에 명시적으로 동의**한 경우도 허용한다(동의한 tool 범위, PreToolUse 게이트 계속 적용). 기본 allowlist는 비어 있고 자동 설치는 하지 않는다.
+- CLI 허용 기준(사용자 결정 2026-07-20): Tier 1 검토 manifest 외에, **사용자가 근거 확인 후 명시적으로 동의한 Tier 2 CLI**도 사용한다(`confirmed_by_user`). 동의 없는 설치·로그인은 하지 않는다.
 - project key는 Git repository이면 canonical top-level path, 아니면 symlink를 해소한 canonical cwd의 SHA-256으로 만든다.
 - Chrome을 사용할 수 없는 환경도 MVP 대상에 포함하되 guided manual로 downgrade한다.
 - 안전 gate의 사용자 승인은 tool call 1회로 제한하고 session-scoped approval은 제공하지 않는다.

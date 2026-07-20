@@ -24,33 +24,52 @@ export function _resetCaches() {
   cached = null;
 }
 
-// ---- MCP allowlist validation ----
+// ---- MCP candidate validation (two acceptance paths) ----
 //
 // candidate: what the runtime reports about an available MCP server plus the tools the model
-//   wants to use: { service_id?, server, transport, publisher, tools:[baseName], provenance:{verified} }
-// allowlist entry: fixed in service-capabilities.json:
-//   { service_id, server, transport, publisher, tools:[baseName], capabilities:[capability] }
+//   wants to use:
+//   { service_id?, server, transport, publisher, tools:[baseName],
+//     provenance:{verified},   // for the static-allowlist path
+//     registered:boolean,      // server is registered/connected in the user's Claude runtime
+//     userConsent:boolean }    // user explicitly approved using this server for this task
+//
+// Path 1 — static allowlist (pre-reviewed in service-capabilities.json): auto-usable, no
+//   per-use consent required. Strongest: server/transport/publisher/tools all pinned.
+// Path 2 — runtime-registered + explicit user consent: the user already added the server to
+//   their Claude config (that registration IS the provenance) AND explicitly consented to use
+//   it now. Limited to the tools the user consented to. Destructive tool calls are still
+//   blocked by the PreToolUse safety gate, and nothing is auto-installed.
 export function validateMcpCandidate(candidate, allowlist = [], capability = null) {
   if (!candidate || typeof candidate !== 'object') return { allowed: false, reason: 'no-candidate' };
-  if (!Array.isArray(allowlist) || allowlist.length === 0) return { allowed: false, reason: 'allowlist-empty' };
 
-  const entry = allowlist.find(
-    (e) => e.server === candidate.server && (!candidate.service_id || e.service_id === candidate.service_id),
-  );
-  if (!entry) return { allowed: false, reason: 'not-in-allowlist' };
-  if (entry.transport !== candidate.transport) return { allowed: false, reason: 'transport-mismatch' };
-  if (entry.publisher !== candidate.publisher) return { allowed: false, reason: 'publisher-mismatch' };
-  // Provenance must be verifiable from hook input; otherwise excluded from auto-run.
-  if (candidate.provenance?.verified !== true) return { allowed: false, reason: 'provenance-unverified' };
-  if (capability && Array.isArray(entry.capabilities) && !entry.capabilities.includes(capability)) {
-    return { allowed: false, reason: 'capability-not-served' };
+  // Path 1: static allowlist.
+  const entry = Array.isArray(allowlist)
+    ? allowlist.find((e) => e.server === candidate.server && (!candidate.service_id || e.service_id === candidate.service_id))
+    : null;
+  if (entry) {
+    if (entry.transport !== candidate.transport) return { allowed: false, reason: 'transport-mismatch' };
+    if (entry.publisher !== candidate.publisher) return { allowed: false, reason: 'publisher-mismatch' };
+    if (candidate.provenance?.verified !== true) return { allowed: false, reason: 'provenance-unverified' };
+    if (capability && Array.isArray(entry.capabilities) && !entry.capabilities.includes(capability)) {
+      return { allowed: false, reason: 'capability-not-served' };
+    }
+    const wanted = Array.isArray(candidate.tools) ? candidate.tools : [];
+    const allowedSet = new Set(entry.tools || []);
+    const rejectedTool = wanted.find((t) => !allowedSet.has(t));
+    if (rejectedTool) return { allowed: false, reason: `tool-not-allowlisted:${rejectedTool}` };
+    return { allowed: true, basis: 'allowlist', entry, tools: wanted };
   }
-  const wanted = Array.isArray(candidate.tools) ? candidate.tools : [];
-  const allowed = new Set(entry.tools || []);
-  const rejectedTool = wanted.find((t) => !allowed.has(t));
-  if (rejectedTool) return { allowed: false, reason: `tool-not-allowlisted:${rejectedTool}` };
 
-  return { allowed: true, entry, tools: wanted };
+  // Path 2: runtime-registered + explicit user consent.
+  const registered = candidate.registered === true;
+  const consented = candidate.userConsent === true;
+  if (registered && consented) {
+    return { allowed: true, basis: 'user-consent', tools: Array.isArray(candidate.tools) ? candidate.tools : [] };
+  }
+  if (registered && !consented) return { allowed: false, reason: 'registered-no-consent' };
+  if (consented && !registered) return { allowed: false, reason: 'consented-not-registered' };
+
+  return { allowed: false, reason: 'not-in-allowlist-and-no-consent' };
 }
 
 // ---- Chrome availability ----
@@ -94,13 +113,15 @@ export function resolveCapability(serviceId, capability, ctx = {}, caps = loadCa
     let detail = null;
 
     if (p === 'cli') {
-      usable = ctx.cliAvailable === true && ctx.cliRefusedOrFailed !== true;
+      // CLI is usable when it is available (Tier 1 preflight ok) OR the user explicitly
+      // consented to it (Tier 2 ad-hoc manifest confirmed_by_user), and was not refused/failed.
+      usable = (ctx.cliAvailable === true || ctx.cliUserConsent === true) && ctx.cliRefusedOrFailed !== true;
       reason = usable ? 'ok' : ctx.cliRefusedOrFailed ? 'cli-refused-or-failed' : 'cli-unavailable';
     } else if (p === 'mcp') {
       const v = validateMcpCandidate(ctx.mcpCandidate, caps.mcp_allowlist, capability);
       usable = v.allowed;
-      reason = v.allowed ? 'ok' : v.reason;
-      detail = v.allowed ? { entry: v.entry, tools: v.tools } : null;
+      reason = v.allowed ? `ok:${v.basis}` : v.reason;
+      detail = v.allowed ? { basis: v.basis, entry: v.entry ?? null, tools: v.tools } : null;
     } else if (p === 'chrome') {
       const d = chromeDecision(ctx.chromeEnv, caps.chrome_policy);
       usable = d.usable;
@@ -128,12 +149,18 @@ export function planCapability(serviceId, capability, ctx = {}, caps = loadCapab
     case 'cli':
       guidance = 'CLI 부트스트랩(setup-service manifest 엔진)으로 진행합니다. 설치·로그인 각각 승인이 필요합니다.';
       break;
-    case 'mcp':
+    case 'mcp': {
+      const server = r.detail.entry?.server ?? ctx.mcpCandidate?.server ?? '등록된 서버';
+      const source =
+        r.detail.basis === 'allowlist'
+          ? `allowlist에 검증된 공식 MCP(${server})`
+          : `사용자가 명시적으로 동의한 등록된 MCP(${server})`;
       guidance =
-        `allowlist에 검증된 공식 MCP(${r.detail.entry.server})로 진행합니다. ` +
-        `사용 가능한 tool: ${r.detail.tools.join(', ') || '(엔트리 tools 참조)'}. ` +
+        `${source}로 진행합니다. ` +
+        `사용 가능한 tool: ${r.detail.tools.join(', ') || '(동의한 tool 범위)'}. ` +
         'MCP tool 호출은 모델이 수행하며 PreToolUse 안전 게이트가 계속 검사합니다.';
       break;
+    }
     case 'chrome':
       guidance =
         'visible Chrome(공식 Claude in Chrome)으로 진행합니다. ' +

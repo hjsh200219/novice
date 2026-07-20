@@ -46,10 +46,9 @@ test('validateMcpCandidate: allowlisted, verified, in-scope candidate is allowed
   assert.deepEqual(v.tools, ['list_projects']);
 });
 
-test('validateMcpCandidate rejects each failure mode with a specific reason', () => {
+test('validateMcpCandidate allowlist path rejects each failure mode with a specific reason', () => {
   const al = seededCaps().mcp_allowlist;
-  assert.equal(validateMcpCandidate(okCandidate(), [], 'bootstrap').reason, 'allowlist-empty');
-  assert.equal(validateMcpCandidate({ ...okCandidate(), server: 'evil' }, al).reason, 'not-in-allowlist');
+  assert.equal(validateMcpCandidate({ ...okCandidate(), server: 'evil' }, al).reason, 'not-in-allowlist-and-no-consent');
   assert.equal(validateMcpCandidate({ ...okCandidate(), transport: 'http' }, al).reason, 'transport-mismatch');
   assert.equal(validateMcpCandidate({ ...okCandidate(), publisher: 'attacker' }, al).reason, 'publisher-mismatch');
   assert.equal(
@@ -66,10 +65,33 @@ test('validateMcpCandidate rejects each failure mode with a specific reason', ()
   );
 });
 
-test('shipped allowlist is empty → nothing auto-runs via MCP', () => {
+test('validateMcpCandidate user-consent path: runtime-registered + explicit consent is allowed', () => {
+  // Not in the allowlist, but the user registered the server in their Claude runtime AND
+  // consented to it → allowed, limited to the consented tools. Works even with empty allowlist.
+  const consented = { server: 'railway', transport: 'stdio', publisher: 'railway', tools: ['status'], registered: true, userConsent: true };
+  const v = validateMcpCandidate(consented, []);
+  assert.equal(v.allowed, true);
+  assert.equal(v.basis, 'user-consent');
+  assert.deepEqual(v.tools, ['status']);
+});
+
+test('validateMcpCandidate: registration without consent, or consent without registration, is rejected', () => {
+  const base = { server: 'railway', transport: 'stdio', publisher: 'railway', tools: ['status'] };
+  assert.equal(validateMcpCandidate({ ...base, registered: true }, []).reason, 'registered-no-consent');
+  assert.equal(validateMcpCandidate({ ...base, userConsent: true }, []).reason, 'consented-not-registered');
+  assert.equal(validateMcpCandidate(base, []).reason, 'not-in-allowlist-and-no-consent');
+});
+
+test('shipped allowlist is empty → no MCP auto-runs without explicit user consent', () => {
   const caps = loadCapabilities();
   assert.deepEqual(caps.mcp_allowlist, [], 'default must be empty (safe: no MCP auto-run)');
+  // A plain candidate (no consent) is rejected against the empty shipped allowlist.
   assert.equal(validateMcpCandidate(okCandidate(), caps.mcp_allowlist).allowed, false);
+  // But a runtime-registered server the user consented to is allowed.
+  assert.equal(
+    validateMcpCandidate({ ...okCandidate(), registered: true, userConsent: true }, caps.mcp_allowlist).allowed,
+    true,
+  );
 });
 
 // ---- Chrome availability ----
@@ -91,6 +113,28 @@ test('CLI available → path cli', () => {
   const caps = seededCaps();
   const r = resolveCapability('supabase', 'bootstrap', { cliAvailable: true }, caps);
   assert.equal(r.path, 'cli');
+});
+
+test('CLI usable via explicit user consent even when not preinstalled (Tier 2)', () => {
+  const caps = seededCaps();
+  const r = resolveCapability('supabase', 'bootstrap', { cliAvailable: false, cliUserConsent: true }, caps);
+  assert.equal(r.path, 'cli');
+});
+
+test('CLI refused → downgrade to user-consented registered MCP (empty allowlist)', () => {
+  const caps = seededCaps();
+  caps.mcp_allowlist = []; // no static allowlist; rely on user consent
+  const r = resolveCapability(
+    'railway',
+    'bootstrap',
+    {
+      cliRefusedOrFailed: true,
+      mcpCandidate: { server: 'railway', transport: 'stdio', publisher: 'railway', tools: ['status'], registered: true, userConsent: true },
+    },
+    caps,
+  );
+  assert.equal(r.path, 'mcp');
+  assert.equal(r.detail.basis, 'user-consent');
 });
 
 test('CLI refused → downgrade to allowlisted MCP', () => {
@@ -139,7 +183,7 @@ test('non-allowlisted MCP candidate is skipped in the chain', () => {
   assert.equal(r.path, 'chrome', 'rogue MCP must not be chosen');
   const mcpStep = r.ordered.find((o) => o.path === 'mcp');
   assert.equal(mcpStep.usable, false);
-  assert.equal(mcpStep.reason, 'not-in-allowlist');
+  assert.equal(mcpStep.reason, 'not-in-allowlist-and-no-consent');
 });
 
 test('pinned guided_manual capability skips straight to guided_manual even if CLI available', () => {

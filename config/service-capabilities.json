@@ -3,10 +3,11 @@
   "reviewed_at": "2026-07-20",
   "capability_priority": ["cli", "mcp", "chrome", "guided_manual"],
   "downgrade_rules": {
-    "cli": "사용자가 CLI 설치를 거부하거나 manifest preflight가 실패하면 mcp로 낮춘다",
-    "mcp": "allowlist에 없거나 provenance를 hook input에서 검증할 수 없으면 chrome으로 낮춘다",
+    "cli": "Tier 1 preflight 실패 또는 사용자가 CLI 설치를 거부하면 mcp로 낮춘다. Tier 2 CLI는 사용자가 근거 확인 후 명시 동의(confirmed_by_user)한 경우 사용",
+    "mcp": "정적 allowlist 정확 일치(+verified provenance) 또는 런타임 등록 서버+명시 동의가 아니면 chrome으로 낮춘다",
     "chrome": "Claude in Chrome 미연결·제3자 provider 환경이면 guided_manual로 낮춘다"
   },
+  "mcp_user_consent_note": "정적 allowlist 외에, 사용자가 Claude runtime에 등록한 서버(registered)이고 이번 작업에 명시 동의(userConsent)한 경우 동의한 tool 범위 안에서 허용한다. 자동 설치는 하지 않으며 PreToolUse 게이트가 계속 적용된다.",
   "mcp_allowlist_entry_schema": {
     "service_id": "서비스 식별자 (services 키와 일치)",
     "server": "runtime에서 식별되는 MCP server 이름 (mcp__<server>__ 접두사의 <server>)",
