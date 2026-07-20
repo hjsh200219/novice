@@ -44,7 +44,7 @@ tests/ (검증)
 | SessionStart | `session-start.js` | 상태 복구·capsule/glossary 주입 |
 | UserPromptSubmit | `user-prompt-submit.js` | 자연어 명령(mode/reset/mute), capsule 중복 방지 |
 | UserPromptExpansion | `user-prompt-expansion.js` | `/novice:mode` 처리 |
-| PreToolUse | `pre-tool-use.js` | 안전 게이트 (fail-closed) |
+| PreToolUse | `pre-tool-use.js` | 안전 게이트 (deny-only; 파괴 비가역·시크릿만 차단, 오류 시 fail-closed) |
 | PostToolUse | `post-tool-use.js` | 출력 redaction + event 기록 |
 | PostToolUseFailure | `post-tool-use-failure.js` | 실패 event 기록 |
 | PostToolBatch | `post-tool-batch.js` | batch 집계·개입 (single-writer) |

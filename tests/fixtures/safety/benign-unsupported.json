@@ -6,7 +6,7 @@
       "tool_input": {
         "command": "npm run build && npm test"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": ""
     },
     {
@@ -14,7 +14,7 @@
       "tool_input": {
         "command": "cat package.json | head -5"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": ""
     },
     {
@@ -22,7 +22,7 @@
       "tool_input": {
         "command": "echo \"done\" > log.txt"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": ""
     },
     {
@@ -30,7 +30,7 @@
       "tool_input": {
         "command": "git log --oneline | head -5"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": ""
     },
     {
@@ -38,7 +38,7 @@
       "tool_input": {
         "command": "ls src | sort"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": ""
     }
   ]

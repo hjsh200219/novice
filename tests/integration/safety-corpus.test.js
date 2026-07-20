@@ -62,16 +62,7 @@ test('dangerous corpus (supported grammar): 100% detected with expected decision
   }
 });
 
-test('dangerous corpus (unsupported grammar): all denied via dangerous-token fallback', async () => {
-  const dataDir = makeDataDir();
-  const cwd = makeRepo();
-  for (const entry of loadCorpus('dangerous-unsupported.json')) {
-    const decision = await judge(entry, cwd, dataDir);
-    assert.equal(decision, 'deny', `${entry.tool_input.command} → expected deny, got ${decision}`);
-  }
-});
-
-test('benign corpus: supported FP ≤10%, unsupported fallback share ≤15%, unsupported never denied', async () => {
+test('benign corpus: supported FP ≤10%, unsupported never denied (delegated to native)', async () => {
   const dataDir = makeDataDir();
   const cwd = makeRepo();
 
@@ -88,13 +79,12 @@ test('benign corpus: supported FP ≤10%, unsupported fallback share ≤15%, uns
   const fpRate = falsePositives / supported.length;
   assert.ok(fpRate <= 0.10, `benign FP rate ${(fpRate * 100).toFixed(1)}% > 10%: ${fpList.join('; ')}`);
 
+  // Unsupported grammar gets no opinion — never denied, delegated to Claude Code's native prompt.
   const unsupported = loadCorpus('benign-unsupported.json');
   for (const entry of unsupported) {
     const decision = await judge(entry, cwd, dataDir);
-    assert.equal(decision, 'ask', `${entry.tool_input.command} → unsupported benign must ask, got ${decision}`);
+    assert.equal(decision, 'allow', `${entry.tool_input.command} → unsupported must be delegated (allow), got ${decision}`);
   }
-  const fallbackShare = unsupported.length / (supported.length + unsupported.length);
-  assert.ok(fallbackShare <= 0.15, `unsupported fallback share ${(fallbackShare * 100).toFixed(1)}% > 15%`);
 });
 
 // ---- git commit secret scan against real repos ----
@@ -144,7 +134,7 @@ test('pathspec commit scans only the named file', async () => {
   assert.equal(decisionOf(dirty).decision, 'deny');
 });
 
-test('benign staged content commits freely; unborn HEAD asks', async () => {
+test('benign staged content commits freely; unborn HEAD is delegated (no opinion)', async () => {
   const dataDir = makeDataDir();
   const cwd = makeRepo();
   fs.writeFileSync(path.join(cwd, 'app.js'), 'export const x = 1;\n');
@@ -152,22 +142,24 @@ test('benign staged content commits freely; unborn HEAD asks', async () => {
   const ok = await commitScan(cwd, dataDir, 'git commit -m "feat: x"');
   assert.equal(decisionOf(ok), null);
 
+  // Unborn HEAD can't be scanned → no opinion (allow), not a block. Deny only on positive detection.
   const unborn = fs.mkdtempSync(path.join(os.tmpdir(), 'novice-unborn-'));
   execFileSync('git', ['-C', unborn, 'init', '-q', '-b', 'main']);
   const r = await commitScan(unborn, dataDir, 'git commit -m "first"');
-  assert.equal(decisionOf(r).decision, 'ask', 'unborn HEAD downgrades to ask');
+  assert.equal(decisionOf(r), null, 'unborn HEAD is delegated, never blocked');
 });
 
-test('oversized staged file and oversized command are denied with split guidance', async () => {
+test('oversized command is denied with split guidance; unscannable staged file is delegated', async () => {
   const dataDir = makeDataDir();
   const cwd = makeRepo();
+
+  // A file too large to scan is delegated (no opinion) — the gate blocks only on a positive secret hit.
   fs.writeFileSync(path.join(cwd, 'big.txt'), 'x'.repeat(1024 * 1024 + 10));
   execFileSync('git', ['-C', cwd, 'add', 'big.txt']);
   const big = await commitScan(cwd, dataDir, 'git commit -m "big"');
-  const d = decisionOf(big);
-  assert.equal(d.decision, 'deny');
-  assert.match(d.reason, /상한/);
+  assert.equal(decisionOf(big), null, 'oversize staged file is delegated, not blocked');
 
+  // An oversized command line itself still can't be safely inspected → deny.
   const hugeCommand = `echo ${'a'.repeat(65 * 1024)}`;
   const r = await commitScan(cwd, dataDir, hugeCommand);
   assert.equal(decisionOf(r).decision, 'deny');

@@ -1,5 +1,6 @@
 .DS_Store
 .omc/*
 !.omc/plans/
+**/.omc/
 .claude/settings.local.json
 _workspace/

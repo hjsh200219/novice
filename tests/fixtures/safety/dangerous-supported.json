@@ -54,7 +54,7 @@
       "tool_input": {
         "command": "rm -rf src"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "recursive subdir"
     },
     {
@@ -62,7 +62,7 @@
       "tool_input": {
         "command": "rm -r node_modules"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "recursive subdir"
     },
     {
@@ -102,7 +102,7 @@
       "tool_input": {
         "command": "git push --force origin feature-x"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "force to unprotected"
     },
     {
@@ -118,7 +118,7 @@
       "tool_input": {
         "command": "git reset --hard"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "discards uncommitted work"
     },
     {
@@ -126,7 +126,7 @@
       "tool_input": {
         "command": "git reset --hard HEAD~3"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "discards commits"
     },
     {
@@ -134,7 +134,7 @@
       "tool_input": {
         "command": "git clean -fd"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "deletes untracked incl dirs"
     },
     {
@@ -142,7 +142,7 @@
       "tool_input": {
         "command": "git clean -fdx"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "deletes untracked + ignored"
     },
     {
@@ -174,7 +174,7 @@
       "tool_input": {
         "command": "Remove-Item -Recurse C:\\projects\\app"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "powershell recursive delete"
     },
     {
@@ -198,7 +198,7 @@
       "tool_input": {
         "command": "vercel rollback"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "rollback"
     },
     {
@@ -230,7 +230,7 @@
       "tool_input": {
         "command": "gh release delete v1.0.0"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "release delete"
     },
     {
@@ -238,7 +238,7 @@
       "tool_input": {
         "command": "vercel --prod"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "production deploy confirmation"
     },
     {
@@ -272,7 +272,7 @@
         "table": "users",
         "env": "dev"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "mcp destructive dev"
     },
     {
@@ -296,7 +296,7 @@
       "tool_input": {
         "command": "Stop-Process -Name node"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "powershell process kill"
     },
     {
@@ -304,7 +304,7 @@
       "tool_input": {
         "command": "remove-item -Recurse C:\\projects\\app"
       },
-      "expect": "ask",
+      "expect": "allow",
       "note": "lowercase cmdlet routes via known list"
     }
   ]

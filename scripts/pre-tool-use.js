@@ -7,9 +7,13 @@
 // analysis lives in scripts/lib/safety.js (Bash/PowerShell grammar, git subgrammar,
 // secret scan, target classification).
 //
+// Deny-only: safety.js emits a deny decision solely for positively-identified
+// catastrophic actions and exposed secret values; everything else (including any
+// command it cannot fully parse) gets no opinion and is delegated to Claude Code's
+// native permission prompt. There is no "ask" tier.
+//
 // FAIL CLOSED: invalid JSON stdin, internal exceptions, and input-cap overflows
-// deny the tool call (exit 2 or an explicit deny decision). Unsupported shell
-// syntax falls back to ask, or deny when dangerous tokens are present.
+// deny the tool call (exit 2 or an explicit deny decision).
 import { readStdinJson, emitPreToolDecision, failClosed } from './lib/hookio.js';
 import { getProjectConfig } from './lib/state.js';
 import { loadSafetyRules } from './lib/secrets.js';

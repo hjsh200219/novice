@@ -17,7 +17,7 @@
 config(데이터) ← lib(순수) ← hook 핸들러. 상세: [ARCHITECTURE.md](./ARCHITECTURE.md), 레이어 규칙: [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md).
 
 ## Critical Constraints (인라인 유지)
-1. **안전 hook은 fail-closed 지향** — pre-tool-use는 위험·모호·상한초과를 deny(exit 2). 단 플랫폼 timeout 한계로 절대 보장은 아님.
+1. **안전 hook은 최소 deny-only 코어** — pre-tool-use는 긍정 탐지된 파괴 비가역 명령(`rm -rf ~`, protected branch force-push, `dd`/`mkfs` 등)과 노출된 시크릿 값만 deny한다. **ask 티어 없음**: 파싱 불가·모호한 명령은 의견 없이 CC 네이티브 권한에 위임(false-prompt 방지). JSON 오류·상한초과·예외만 fail-closed deny(exit 2). 플랫폼 timeout 한계로 절대 보장은 아님. 예외: `permission_mode === 'bypassPermissions'`면 게이트 완전 stand down(즉시 allow) — 사용자가 전 리스크를 인수한 모드이므로 파괴적 명령도 통과.
 2. **학습 hook은 fail-open** — 오류 시 조용히 exit 0, 사용자 작업 차단 금지.
 3. **credential 값 미취급** — 요청·저장·전달·자동입력 금지. audit엔 service id·revision·step·exit status만.
 4. **state는 `CLAUDE_PLUGIN_DATA`에만** — `scripts/lib/state.js` 경유. 리포 트리에 상태 파일 금지.
@@ -47,5 +47,5 @@ Layer note: These four principles are the behavioral/judgment layer. They comple
 | 기술 부채 | [docs/exec-plans/tech-debt-tracker.md](./docs/exec-plans/tech-debt-tracker.md) |
 | 운영 원칙 | [docs/design-docs/core-beliefs.md](./docs/design-docs/core-beliefs.md) |
 | 위협 모델·비보증 | [README.md](./README.md) 안전 게이트 절, [docs/PRD.md](./docs/PRD.md) §4.5 |
-| 사용자 명령 | `/novice:mode 1\|2\|3\|off`, `novice mute/unmute/reset <용어>` — [skills/mode/SKILL.md](./skills/mode/SKILL.md) |
+| 사용자 명령 | `/novice`(front door), `/novice:mode 1\|2\|3\|off`, `novice mute/unmute/reset <용어>` — [skills/novice/SKILL.md](./skills/novice/SKILL.md), [skills/mode/SKILL.md](./skills/mode/SKILL.md) |
 | 외부 서비스 부트스트랩 | [skills/setup-service/SKILL.md](./skills/setup-service/SKILL.md) |

@@ -1,13 +1,20 @@
-// Safety-gate analysis (L2 lib). Pure-ish decision logic for the PreToolUse hook:
-// destructive commands, git history damage, secret commit/deploy, destructive MCP.
-// Returns { decision: 'deny'|'ask', reason } or null (no opinion). The hook wrapper
-// (scripts/pre-tool-use.js) owns stdin/stdout and fail-closed behavior.
+// Safety-gate analysis (L2 lib). Minimal deny-only core for the PreToolUse hook.
+//
+// Philosophy (PRD §4.5): the gate blocks ONLY on positively-identified, catastrophic,
+// irreversible actions and on secret VALUES exposed on a command line / in a commit.
+// Everything else — including any command whose grammar we cannot fully parse — returns
+// null (no opinion) and is delegated to Claude Code's native permission prompt. There is
+// no "ask" tier: we never second-guess unparseable shell, which is what produced constant
+// false confirmations on benign piped/redirected commands.
+//
+// Returns { decision: 'deny', reason } or null. The hook wrapper (scripts/pre-tool-use.js)
+// owns stdin/stdout and fail-closed behavior on malformed input.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { scanText } from './secrets.js';
-import { tokenizeShell, tokenizePowershell, isPowershellCommand, parseGit, baseName } from './grammar.js';
+import { tokenizeShell, isPowershellCommand, parseGit, baseName } from './grammar.js';
 
 const SPLIT_GUIDANCE = '명령이나 파일을 더 작은 단위로 나눠 다시 시도하세요.';
 
@@ -18,6 +25,10 @@ function git(cwd, args) {
     timeout: 5000,
     maxBuffer: 16 * 1024 * 1024,
   });
+}
+
+function deny(reason) {
+  return { decision: 'deny', reason };
 }
 
 // ---- protected branches ----
@@ -63,16 +74,6 @@ function classifyTargetFromValues(toolInput) {
   return 'unknown';
 }
 
-// ---- decision helpers ----
-
-function deny(reason) {
-  return { decision: 'deny', reason };
-}
-
-function ask(reason) {
-  return { decision: 'ask', reason };
-}
-
 function safeRealpath(p) {
   try {
     return fs.realpathSync(p);
@@ -81,21 +82,13 @@ function safeRealpath(p) {
   }
 }
 
-// ---- rm ----
+// ---- rm: deny only when the target is home / root / project root / parent / '*' ----
 
 function checkRm(argv, cwd) {
-  let recursive = false;
   const targets = [];
   for (const t of argv.slice(1)) {
     if (t === '--') continue;
-    if (t.startsWith('--')) {
-      if (t === '--recursive') recursive = true;
-      continue;
-    }
-    if (t.startsWith('-') && t.length > 1) {
-      if (/[rR]/.test(t.slice(1))) recursive = true;
-      continue;
-    }
+    if (t.startsWith('-')) continue; // flags (recursive-only rm of a normal path is allowed)
     targets.push(t);
   }
   const home = os.homedir();
@@ -111,13 +104,10 @@ function checkRm(argv, cwd) {
       return deny(`'rm' 대상(${raw})이 홈 디렉토리·프로젝트 루트·상위 경로를 가리켜 차단했어요. 복구가 어려운 삭제예요.`);
     }
   }
-  if (recursive && targets.length > 0) {
-    return ask(`폴더를 통째로 삭제해요: ${targets.join(', ')}. Git에 없는(untracked) 파일은 복구할 수 없어요. 계속할까요?`);
-  }
   return null;
 }
 
-// ---- git ----
+// ---- git: deny force-push to a protected branch and secret-bearing commits ----
 
 function currentBranch(cwd) {
   try {
@@ -136,26 +126,6 @@ function checkGit(argv, cwd, rules, extraProtected) {
     const target = parsed.targetBranch ?? currentBranch(cwd);
     if (isProtectedBranch(target, rules, extraProtected)) {
       return deny(`보호된 branch(${target})로의 force push는 원격 기록을 영구히 덮어써서 차단했어요. 새 branch에 push하거나 force 없이 push하세요.`);
-    }
-    if (target == null) {
-      return ask('force push 대상 branch를 확인할 수 없어요. force push는 원격 기록을 덮어씁니다. 계속할까요?');
-    }
-    return ask(`branch '${target}'에 force push하면 원격의 기존 기록을 덮어써요. 계속할까요?`);
-  }
-
-  if (parsed.sub === 'reset') {
-    if (parsed.exotic) return ask('git reset의 지원하지 않는 옵션 조합이라 자동 검증을 못 했어요. 계속할까요?');
-    if (parsed.mode === 'hard') {
-      return ask(`git reset --hard는 commit하지 않은 변경을 모두 버려요 (대상: ${parsed.ref ?? 'HEAD'}). 되돌릴 수 없어요. 계속할까요?`);
-    }
-    return null;
-  }
-
-  if (parsed.sub === 'clean') {
-    if (parsed.dryRun) return null;
-    if (parsed.force) {
-      const extras = [parsed.dirs ? '폴더 포함(-d)' : null, parsed.ignored ? '.gitignore된 파일 포함(-x)' : null].filter(Boolean);
-      return ask(`git clean -f는 Git이 추적하지 않는 파일을 삭제해요${extras.length ? ` — ${extras.join(', ')}` : ''}. 삭제 후 복구할 수 없어요. 계속할까요?`);
     }
     return null;
   }
@@ -177,15 +147,15 @@ function trackedModifiedFiles(cwd) {
   return out.split('\0').filter(Boolean);
 }
 
+// Scan the commit's candidate files for secret VALUES; deny if any is found.
+// Anything we cannot scan (exotic options, unborn HEAD, oversize, read error) returns
+// null — the gate blocks only on a positive secret detection, never on inability to scan.
 function checkGitCommit(parsed, cwd, rules) {
-  if (parsed.exotic) {
-    return ask('git commit의 지원하지 않는 옵션 조합이라 commit 내용을 자동 검사하지 못했어요. 시크릿이 없는지 직접 확인 후 진행하세요.');
-  }
-
+  if (parsed.exotic) return null;
   try {
     git(cwd, ['rev-parse', '--verify', 'HEAD']);
   } catch {
-    return ask('첫 commit(unborn HEAD)이라 자동 시크릿 검사가 제한돼요. .env 같은 비밀값 파일이 포함되지 않았는지 확인 후 진행하세요.');
+    return null; // unborn HEAD
   }
 
   const caps = rules.input_caps;
@@ -199,7 +169,7 @@ function checkGitCommit(parsed, cwd, rules) {
         const abs = path.resolve(cwd, f);
         const st = fs.statSync(abs);
         if (!st.isFile()) return null;
-        if (st.size > caps.single_file_bytes) return { oversize: true };
+        if (st.size > caps.single_file_bytes) return null;
         return { content: fs.readFileSync(abs, 'utf8') };
       };
     } else if (parsed.allFlag) {
@@ -213,7 +183,7 @@ function checkGitCommit(parsed, cwd, rules) {
           return null; // deleted file
         }
         if (!st.isFile()) return null;
-        if (st.size > caps.single_file_bytes) return { oversize: true };
+        if (st.size > caps.single_file_bytes) return null;
         return { content: fs.readFileSync(abs, 'utf8') };
       };
     } else {
@@ -225,7 +195,7 @@ function checkGitCommit(parsed, cwd, rules) {
         } catch {
           return null; // deleted from index
         }
-        if (size > caps.single_file_bytes) return { oversize: true };
+        if (size > caps.single_file_bytes) return null;
         return { content: git(cwd, ['show', `:0:${f}`]) };
       };
     }
@@ -235,13 +205,8 @@ function checkGitCommit(parsed, cwd, rules) {
       if (skipExt.has(path.extname(f).toLowerCase())) continue;
       const r = readContent(f);
       if (r == null) continue;
-      if (r.oversize) {
-        return deny(`commit 대상 파일(${f})이 1MiB 스캔 상한을 넘어 시크릿 검사를 못 했어요. ${SPLIT_GUIDANCE}`);
-      }
       total += Buffer.byteLength(r.content, 'utf8');
-      if (total > caps.total_candidate_bytes) {
-        return deny(`commit 검사 대상이 총 5MiB 상한을 넘었어요. ${SPLIT_GUIDANCE}`);
-      }
+      if (total > caps.total_candidate_bytes) return null;
       const findings = scanText(r.content, rules);
       if (findings.length > 0) {
         const ids = [...new Set(findings.map((x) => x.id))].join(', ');
@@ -253,11 +218,11 @@ function checkGitCommit(parsed, cwd, rules) {
     }
     return null;
   } catch {
-    return ask('commit 대상 파일을 검사하는 중 오류가 나서 시크릿 검사를 완료하지 못했어요. 비밀값이 없는지 직접 확인 후 진행하세요.');
+    return null; // scan error → no opinion
   }
 }
 
-// ---- deploy CLIs ----
+// ---- deploy CLIs: deny production/unknown destructive verbs and secret-bearing deploy args ----
 
 function checkDeployCli(svc, argv, cwd, rules) {
   const svcRules = rules.deploy_clis[svc];
@@ -269,28 +234,23 @@ function checkDeployCli(svc, argv, cwd, rules) {
     if (subcommand === verb || subcommand.startsWith(`${verb} `)) {
       const effectiveTarget = target === 'preview' ? 'preview' : target;
       const action = actions[effectiveTarget] ?? actions.unknown ?? 'deny';
-      const what = `${svc} ${verb}`;
       if (action === 'deny') {
         return deny(
-          `'${what}'는 ${describeTarget(effectiveTarget)}의 리소스를 삭제·초기화할 수 있어 차단했어요. ` +
+          `'${svc} ${verb}'는 ${describeTarget(effectiveTarget)}의 리소스를 삭제·초기화할 수 있어 차단했어요. ` +
             '정말 필요하면 해당 서비스 콘솔에서 대상과 백업을 확인하고 직접 실행하세요.',
         );
       }
-      return ask(`'${what}' — 대상 환경: ${describeTarget(effectiveTarget)}. 삭제·초기화된 데이터는 이 플러그인이 복구할 수 없어요. 계속할까요?`);
+      return null; // non-deny destructive verbs are delegated to Claude Code's native prompt
     }
   }
 
-  // Deploy verb: production deploys get a confirmation; env-file style args get scanned.
+  // Deploy args that point at an env file get a secret scan (deny on a real secret value).
   if (svcRules.secret_scan_on_deploy) {
     for (const t of argv.slice(1)) {
       if (/^\.?env(\..+)?$/i.test(baseName(t))) {
         const verdict = scanEnvFileArg(t, cwd, rules);
         if (verdict) return verdict;
       }
-    }
-    const isDeploy = operands.length === 0 || operands[0] === 'deploy';
-    if (isDeploy && target === 'production') {
-      return ask('production(실서비스 환경)으로 배포해요. preview deployment로 먼저 확인하는 것을 권해요. 계속할까요?');
     }
   }
   return null;
@@ -301,9 +261,7 @@ function scanEnvFileArg(fileArg, cwd, rules) {
     const abs = path.resolve(cwd, fileArg);
     const st = fs.statSync(abs);
     if (!st.isFile()) return null;
-    if (st.size > rules.input_caps.single_file_bytes) {
-      return deny(`배포 인자로 넘긴 파일(${fileArg})이 스캔 상한을 넘었어요. ${SPLIT_GUIDANCE}`);
-    }
+    if (st.size > rules.input_caps.single_file_bytes) return null;
     const findings = scanText(fs.readFileSync(abs, 'utf8'), rules);
     if (findings.length > 0) {
       const ids = [...new Set(findings.map((x) => x.id))].join(', ');
@@ -325,38 +283,13 @@ function describeTarget(cls) {
   }[cls] ?? cls;
 }
 
-// ---- unsupported-syntax fallback ----
-
-// Shared by Bash and PowerShell grammars: dangerous token present → deny, else ask.
-function unsupportedFallback(command, rules, reason) {
-  const lower = command.toLowerCase();
-  // Boundary allows _ and - so tokens match inside SECRET_KEY / --force-with-lease style words.
-  const dangerous = rules.dangerous_tokens.filter((t) => {
-    const re = new RegExp(`(?:^|[^a-z0-9])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`, 'i');
-    return re.test(lower);
-  });
-  if (dangerous.length > 0) {
-    return deny(
-      `지원하지 않는 shell 문법(${reason})에 위험 요소(${dangerous.slice(0, 3).join(', ')})가 섞여 있어 차단했어요. ` +
-        '한 번에 한 명령씩, pipe·리다이렉트 없이 나눠 실행하세요.',
-    );
-  }
-  return ask(`지원하지 않는 shell 문법(${reason})이라 자동 안전 검증을 못 했어요. 명령 내용을 확인하고 진행하세요.`);
-}
-
-// ---- PowerShell ----
+// ---- PowerShell: deny only the catastrophic disk/format cmdlets ----
 
 function analyzePowershell(command, rules) {
-  const tokenized = tokenizePowershell(command);
-  if (!tokenized.supported) return unsupportedFallback(command, rules, `powershell:${tokenized.reason}`);
-
-  const argv = tokenized.argv;
-  const name = argv[0].toLowerCase(); // PowerShell cmdlet names are case-insensitive
+  const argv = command.trim().split(/\s+/);
+  const name = argv[0].toLowerCase();
   if (rules.shell_rules.powershell_dangerous_deny.some((c) => c.toLowerCase() === name)) {
     return deny(`'${argv[0]}'은 디스크·파티션을 복구 불가능하게 파괴할 수 있어 이 플러그인에서는 차단해요.`);
-  }
-  if (rules.shell_rules.powershell_dangerous_ask.some((c) => c.toLowerCase() === name)) {
-    return ask(`'${argv[0]}'은 파일·프로세스 상태를 바꿔요. 대상을 확인하고 진행하세요: ${argv.slice(1).join(' ')}`);
   }
   return null;
 }
@@ -371,7 +304,8 @@ export function analyzeBash(command, cwd, rules, extraProtected) {
     return deny(`명령이 64KiB 입력 상한을 넘어 검사 없이 실행할 수 없어요. ${SPLIT_GUIDANCE}`);
   }
 
-  // Raw-argv secret exposure beats everything else: never allow secrets on a command line.
+  // Raw-argv secret exposure beats everything: a secret VALUE on the command line is denied
+  // regardless of grammar (this scan does not need the command to be parseable).
   const rawFindings = scanText(command, rules);
   if (rawFindings.length > 0) {
     const ids = [...new Set(rawFindings.map((x) => x.id))].join(', ');
@@ -381,15 +315,13 @@ export function analyzeBash(command, cwd, rules, extraProtected) {
     );
   }
 
-  // PowerShell cmdlets get the PowerShell finite grammar (backtick escapes,
-  // backslash paths); everything else stays on the Bash grammar.
-  const psKnown = [...rules.shell_rules.powershell_dangerous_deny, ...rules.shell_rules.powershell_dangerous_ask];
+  const psKnown = rules.shell_rules.powershell_dangerous_deny;
   if (isPowershellCommand(command, psKnown)) {
     return analyzePowershell(command, rules);
   }
 
   const tokenized = tokenizeShell(command);
-  if (!tokenized.supported) return unsupportedFallback(command, rules, tokenized.reason);
+  if (!tokenized.supported) return null; // unparseable grammar → no opinion (delegate to CC native)
 
   const argv = tokenized.argv;
   const base = baseName(argv[0]);
@@ -397,9 +329,6 @@ export function analyzeBash(command, cwd, rules, extraProtected) {
   if (base === 'rm') return checkRm(argv, cwd);
   if (rules.shell_rules.dangerous_commands_deny.includes(base)) {
     return deny(`'${base}'는 디스크·파일을 복구 불가능하게 파괴할 수 있어 이 플러그인에서는 차단해요.`);
-  }
-  if (rules.shell_rules.dangerous_commands_ask.includes(base)) {
-    return ask(`'${base}'는 파일·프로세스 상태를 바꿔요. 대상을 확인하고 진행하세요: ${argv.slice(1).join(' ')}`);
   }
   if (base === 'git') return checkGit(argv, cwd, rules, extraProtected);
   if (Object.prototype.hasOwnProperty.call(rules.deploy_clis, base)) {
@@ -419,9 +348,11 @@ export function analyzeMcp(toolName, toolInput, rules) {
   const target = classifyTargetFromValues(toolInput);
   const effective = target === 'preview' ? 'staging' : target;
   const action = rules.mcp_rules.action[effective] ?? 'deny';
-  const summary = `외부 도구 '${toolName}' — 대상 환경: ${describeTarget(effective)}`;
   if (action === 'deny') {
-    return deny(`${summary}. 원격 리소스를 삭제·초기화하는 작업은 ${describeTarget(effective)}에서 차단해요. 필요하면 서비스 콘솔에서 직접 실행하세요.`);
+    return deny(
+      `외부 도구 '${toolName}' — 대상 환경: ${describeTarget(effective)}. ` +
+        `원격 리소스를 삭제·초기화하는 작업은 ${describeTarget(effective)}에서 차단해요. 필요하면 서비스 콘솔에서 직접 실행하세요.`,
+    );
   }
-  return ask(`${summary}. 삭제·초기화된 원격 데이터는 이 플러그인이 복구할 수 없어요. 계속할까요?`);
+  return null; // non-production destructive MCP is delegated to Claude Code's native prompt
 }
