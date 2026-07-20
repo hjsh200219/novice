@@ -132,12 +132,7 @@ export function tokenizeShell(command) {
   return { supported: true, argv };
 }
 
-// ---- PowerShell finite grammar ----
-//
-// Same "single command + argv" boundary as the Bash grammar, but with PowerShell
-// lexical rules: backtick (not backslash) is the escape character, backslash is a
-// plain path character, '' escapes a quote inside single quotes, "" inside double
-// quotes, `$(...)` subexpressions / scriptblocks / call operator / --% are unsupported.
+// ---- PowerShell routing ----
 
 // Detect a PowerShell command line: canonical Verb-Noun capitalization
 // (Remove-Item, Get-ChildItem) or a case-insensitive hit in the known cmdlet
@@ -150,100 +145,6 @@ export function isPowershellCommand(command, knownCmdlets = []) {
   if (/^[A-Z][a-z]+-[A-Z][A-Za-z]+$/.test(first)) return true;
   const lower = first.toLowerCase();
   return knownCmdlets.some((c) => c.toLowerCase() === lower);
-}
-
-export function tokenizePowershell(command) {
-  if (typeof command !== 'string') return { supported: false, reason: 'not-a-string' };
-  if (command.trim() === '') return { supported: false, reason: 'empty' };
-
-  const argv = [];
-  let cur = '';
-  let hasCur = false;
-  let sawUnquotedGlob = false;
-  let i = 0;
-  const n = command.length;
-
-  const pushCur = () => { if (hasCur) { argv.push(cur); cur = ''; hasCur = false; } };
-
-  while (i < n) {
-    const ch = command[i];
-
-    if (ch === '\n' || ch === '\r') return { supported: false, reason: 'newline' };
-    if (ch === ' ' || ch === '\t') { pushCur(); i++; continue; }
-
-    if (ch === ';') return { supported: false, reason: 'control-operator:semicolon' };
-    if (ch === '|') return { supported: false, reason: 'control-operator:pipe' };
-    if (ch === '&') return { supported: false, reason: 'call-operator-or-background' };
-    if (ch === '<') return { supported: false, reason: 'redirect:lt' };
-    if (ch === '>') return { supported: false, reason: 'redirect:gt' };
-    if (ch === '(' || ch === ')') return { supported: false, reason: 'grouping-paren' };
-    if (ch === '{' || ch === '}') return { supported: false, reason: 'scriptblock-brace' };
-
-    if (ch === '-' && command.startsWith('--%', i)) {
-      return { supported: false, reason: 'stop-parsing-token' };
-    }
-
-    if (ch === '`') {
-      const nx = command[i + 1];
-      if (nx === undefined) return { supported: false, reason: 'line-continuation-backtick' };
-      cur += nx; hasCur = true; i += 2; continue;
-    }
-
-    if (ch === '$') {
-      if (command[i + 1] === '(') return { supported: false, reason: 'subexpression:dollar-paren' };
-      // $var / $env:X kept as literal token text; ${name} hits the brace rule above.
-      cur += ch; hasCur = true; i++; continue;
-    }
-
-    if (ch === "'") {
-      hasCur = true; i++;
-      let closed = false;
-      while (i < n) {
-        if (command[i] === "'") {
-          if (command[i + 1] === "'") { cur += "'"; i += 2; continue; } // '' → literal quote
-          closed = true; i++; break;
-        }
-        cur += command[i]; i++;
-      }
-      if (!closed) return { supported: false, reason: 'unterminated-single-quote' };
-      continue;
-    }
-
-    if (ch === '"') {
-      hasCur = true; i++;
-      let closed = false;
-      while (i < n) {
-        const c = command[i];
-        if (c === '"') {
-          if (command[i + 1] === '"') { cur += '"'; i += 2; continue; } // "" → literal quote
-          closed = true; i++; break;
-        }
-        if (c === '`') {
-          const nx = command[i + 1];
-          if (nx === undefined) return { supported: false, reason: 'unterminated-double-quote' };
-          cur += nx; i += 2; continue;
-        }
-        if (c === '$' && command[i + 1] === '(') {
-          return { supported: false, reason: 'subexpression:dollar-paren' };
-        }
-        cur += c; i++;
-      }
-      if (!closed) return { supported: false, reason: 'unterminated-double-quote' };
-      continue;
-    }
-
-    if (ch === '*' || ch === '?' || ch === '[' || ch === ']') {
-      sawUnquotedGlob = true; cur += ch; hasCur = true; i++; continue;
-    }
-
-    // Backslash is an ordinary path character in PowerShell (C:\path\to\file).
-    cur += ch; hasCur = true; i++;
-  }
-  pushCur();
-
-  if (argv.length === 0) return { supported: false, reason: 'empty' };
-  if (sawUnquotedGlob) return { supported: false, reason: 'unquoted-glob', argv };
-  return { supported: true, argv };
 }
 
 // ---- Git subgrammar (commit / push / reset / clean) ----

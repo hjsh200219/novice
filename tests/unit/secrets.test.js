@@ -80,5 +80,5 @@ test('clean text passes through untouched', () => {
 test('rules load once and expose caps used by the gate', () => {
   const rules = loadSafetyRules();
   assert.equal(rules.input_caps.command_bytes, 65536);
-  assert.ok(Array.isArray(rules.dangerous_tokens) && rules.dangerous_tokens.includes('rm'));
+  assert.ok(Array.isArray(rules.scan_path_skip) && rules.scan_path_skip.includes('tests/fixtures/'));
 });

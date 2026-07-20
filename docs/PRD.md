@@ -292,7 +292,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 
 #### 지원 command grammar와 입력 상한
 
-- P0는 범용 shell parser를 제공하지 않는다. Bash와 PowerShell 각각에 대해 **단일 command + argv**의 유한 lexical grammar만 지원한다: 공백 분리, 따옴표 literal, escape, flag, `--`, 명시적 path argument.
+- P0는 범용 shell parser를 제공하지 않는다. Bash는 **단일 command + argv**의 유한 lexical grammar(공백 분리, 따옴표 literal, escape, flag, `--`, 명시적 path argument)를 파싱한다. PowerShell은 첫 토큰(Verb-Noun cmdlet)만 식별해 disk-format 계열 deny 리스트와 대조한다 — 인자 tokenization은 하지 않는다.
 - shell control operator(`;`, newline, `&&`, `||`, pipe, redirect), command/process substitution, heredoc, `eval`, nested shell, unescaped glob은 미지원이다. bootstrap engine은 항상 exec-form argv와 한 번에 한 명령을 사용하므로 이 grammar 안에 머문다.
 - Git은 `commit`, `push`의 versioned subgrammar를 파싱한다(force-push·commit 시크릿 스캔). 일반 commit, `-a`, resolved pathspec만 candidate tree를 계산하고 그 밖의 조합은 위임한다. `reset`·`clean`은 판정하지 않고 위임한다.
 - shell command 입력은 64 KiB, scan 대상 단일 파일은 1 MiB, 한 tool call의 총 candidate bytes는 5 MiB로 제한한다. **명령줄 입력**이 상한을 넘으면 안전하게 검사할 수 없으므로 deny하고 분할 방법을 안내한다. scan 대상 **파일**이 상한을 넘으면 차단하지 않고 위임한다(긍정 탐지 시에만 deny).
@@ -432,7 +432,7 @@ novice/
 - 위험 fixture는 `PreToolUse` 반환값으로 실제 deny된다(ask 티어 없음).
 - hook 예외·잘못된 JSON·oversized 명령줄 input은 deny되고, 미지원 shell 문법은 판정하지 않고 CC 네이티브에 위임되며 timeout 한계는 보증 범위에 표시된다.
 - novice off에서도 동일하게 동작하고 plugin disable 시 hook이 사라짐을 문서화한다.
-- Bash·PowerShell 유한 grammar와 Git subgrammar의 versioned corpus에서 `git commit`, `git commit -am`, path commit, deploy CLI, `mcp__.*` destructive tool fixture를 포함한다.
+- Bash 유한 grammar·PowerShell cmdlet 라우팅과 Git subgrammar의 versioned corpus에서 `git commit`, `git commit -am`, path commit, deploy CLI, `mcp__.*` destructive tool fixture를 포함한다.
 - secret fixture 탐지율 100%, 지원 grammar benign 오탐률 10% 이하, 미지원 benign 100% 위임(allow)을 충족한다.
 - production/unknown destructive deny, staging/development 위임, protected branch 추가-only override fixture가 통과한다.
 - Bash·MCP tool output에 known secret fixture가 있으면 `updatedToolOutput`으로 모델 전달 전 redaction되고 원문이 state·metric에 남지 않는다.
@@ -515,7 +515,7 @@ novice/
 - project key는 Git repository이면 canonical top-level path, 아니면 symlink를 해소한 canonical cwd의 SHA-256으로 만든다.
 - Chrome을 사용할 수 없는 환경도 MVP 대상에 포함하되 guided manual로 downgrade한다.
 - 안전 gate의 사용자 승인은 tool call 1회로 제한하고 session-scoped approval은 제공하지 않는다.
-- 안전 gate는 Bash·PowerShell 유한 grammar, 추가-only protected branch, `development|preview/staging|production|unknown` target 분류를 사용한다.
+- 안전 gate는 Bash 유한 grammar·PowerShell cmdlet 라우팅, 추가-only protected branch, `development|preview/staging|production|unknown` target 분류를 사용한다.
 
 ### 후속 결정 사항 — 구현 착수를 막지 않음
 

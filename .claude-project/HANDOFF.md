@@ -18,8 +18,8 @@ summary: 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 제거
 
 ## Next Steps
 1. **플러그인 재설치** 필요 — 실행 세션은 캐시 복사본을 쓰므로 deny-only 코어와 `/novice` 명령이 아직 미반영. `/plugin` update→재설치 후 적용.
-2. (선택) fixture-scan 갭 개선 — commit secret 스캐너에 `tests/fixtures/` 경로 예외 추가 검토. [[safety-fixture-scan-self-block-gap]]
-3. (선택) 미사용 config 정리 — `safety-rules.json`의 `dangerous_tokens`는 deny-only 전환으로 미사용화, `grammar.js`의 `tokenizePowershell`도 미참조.
+2. ~~fixture-scan 갭~~ — 해결됨: `scan_path_skip` 경로 예외 (b4e9d84). [[safety-fixture-scan-self-block-gap]]
+3. ~~미사용 config 정리~~ — 해결됨: `dangerous_tokens`·`*_ask` 리스트·`git_rules`·`tokenizePowershell` 제거, 소비되는 `ask` 값은 `delegate`로 개명 (deny-only 검토 후속).
 
 ## Blockers
 - 없음 (재설치는 사용자 환경 조작, 기술 블록 아님)

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenizeShell, tokenizePowershell, isPowershellCommand, parseGit, baseName } from '../../scripts/lib/grammar.js';
+import { tokenizeShell, isPowershellCommand, parseGit, baseName } from '../../scripts/lib/grammar.js';
 
 test('tokenizes plain argv with flags, --, and paths', () => {
   const r = tokenizeShell('git commit -m "fix: login bug" -- src/app.js');
@@ -61,48 +61,6 @@ test('isPowershellCommand: Verb-Noun capitalization or known cmdlet, not Unix da
   assert.equal(isPowershellCommand('docker-compose up'), false);
   assert.equal(isPowershellCommand('create-react-app my-app'), false);
   assert.equal(isPowershellCommand('git status'), false);
-});
-
-test('tokenizePowershell: backslash is a path char, backtick escapes, quote doubling', () => {
-  const paths = tokenizePowershell('Remove-Item -Recurse -Force C:\\projects\\app');
-  assert.equal(paths.supported, true);
-  assert.deepEqual(paths.argv, ['Remove-Item', '-Recurse', '-Force', 'C:\\projects\\app']);
-
-  const tick = tokenizePowershell('Write-Output hello` world');
-  assert.deepEqual(tick.argv, ['Write-Output', 'hello world'], 'backtick-space escapes the space');
-
-  const single = tokenizePowershell("Write-Output 'it''s here'");
-  assert.deepEqual(single.argv, ['Write-Output', "it's here"]);
-
-  const double = tokenizePowershell('Write-Output "say ""hi"" now"');
-  assert.deepEqual(double.argv, ['Write-Output', 'say "hi" now']);
-
-  const dollarVar = tokenizePowershell('Get-Content $env:USERPROFILE\\notes.txt');
-  assert.equal(dollarVar.supported, true, 'bare $env var stays a literal token');
-});
-
-test('tokenizePowershell: every PowerShell control construct is unsupported with a reason', () => {
-  const cases = [
-    ['Remove-Item x; Get-Item y', 'control-operator:semicolon'],
-    ['Get-Content a | Select-String b', 'control-operator:pipe'],
-    ['& C:\\script.ps1', 'call-operator-or-background'],
-    ['Get-Content a > out.txt', 'redirect:gt'],
-    ['Get-Content < in.txt', 'redirect:lt'],
-    ['Invoke-Expression $(Get-Content x)', 'subexpression:dollar-paren'],
-    ['Write-Output "value: $(Get-Secret)"', 'subexpression:dollar-paren'],
-    ['ForEach-Object { Remove-Item $_ }', 'scriptblock-brace'],
-    ['Get-Process (Get-Name)', 'grouping-paren'],
-    ['Remove-Item --% -Recurse *', 'stop-parsing-token'],
-    ["Write-Output 'unterminated", 'unterminated-single-quote'],
-    ['Write-Output trailing`', 'line-continuation-backtick'],
-  ];
-  for (const [cmd, reason] of cases) {
-    const r = tokenizePowershell(cmd);
-    assert.equal(r.supported, false, cmd);
-    assert.equal(r.reason, reason, cmd);
-  }
-  assert.equal(tokenizePowershell('Remove-Item *').reason, 'unquoted-glob');
-  assert.equal(tokenizePowershell('Remove-Item "file with *"').supported, true, 'quoted glob is literal');
 });
 
 // ---- git subgrammar ----
