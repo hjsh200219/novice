@@ -28,6 +28,10 @@ Claude Code 안에서 marketplace를 등록한 뒤 설치합니다:
   novice marketplace를 update한 뒤 플러그인을 재설치하세요.
 - 로컬 개발·수정 테스트: 리포를 clone한 뒤 `claude --plugin-dir <리포 경로>`로
   설치 없이 로드할 수 있습니다.
+- npm 채널: [`claude-novice`](https://www.npmjs.com/package/claude-novice) 패키지로도
+  배포됩니다. `npm install -g claude-novice` 후 `claude --plugin-dir "$(npm root -g)/claude-novice"`로
+  로드하거나, 자체 marketplace의 plugin `source`에 `{"source":"npm","package":"claude-novice"}`를
+  쓸 수 있습니다.
 - 제거: `/plugin uninstall novice` — 제거하면 안전 게이트도 함께 사라집니다
   (아래 위협 모델 참조).
 
@@ -207,6 +211,9 @@ Register the marketplace inside Claude Code, then install:
   novice marketplace in the `/plugin` menu, then reinstall the plugin.
 - Local development: clone the repo and load it without installing via
   `claude --plugin-dir <repo path>`.
+- npm channel: also published as [`claude-novice`](https://www.npmjs.com/package/claude-novice).
+  `npm install -g claude-novice` then `claude --plugin-dir "$(npm root -g)/claude-novice"`,
+  or point your own marketplace's plugin `source` at `{"source":"npm","package":"claude-novice"}`.
 - Uninstall: `/plugin uninstall novice` — removing the plugin also removes the safety gate
   (see the threat model below).
 
