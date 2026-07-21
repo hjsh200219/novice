@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "manifest_revision": 1,
-  "reviewed_at": "2026-07-20",
+  "manifest_revision": 2,
+  "reviewed_at": "2026-07-22",
   "tier": 1,
   "service_id": "supabase",
   "binary": "supabase",
@@ -12,6 +12,7 @@
       "package_manager": "homebrew",
       "package_coordinate": "supabase/tap/supabase",
       "argv": ["brew", "install", "supabase/tap/supabase"],
+      "upgrade_argv": ["brew", "upgrade", "supabase/tap/supabase"],
       "min_version": "1.200.0",
       "global_changes": ["Homebrew tap 추가 및 supabase 설치"]
     },
@@ -20,6 +21,7 @@
       "package_manager": "scoop",
       "package_coordinate": "supabase",
       "argv": ["scoop", "install", "supabase"],
+      "upgrade_argv": ["scoop", "update", "supabase"],
       "min_version": "1.200.0",
       "global_changes": ["scoop bucket에서 supabase 설치"]
     }

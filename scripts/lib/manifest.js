@@ -62,7 +62,15 @@ export function validateManifest(manifest) {
       }
       if (typeof inst.min_version !== 'string') errors.push(`installers[${i}]: min_version required`);
       checkArgv(inst.argv, `installers[${i}].argv`, errors);
+      if (inst.upgrade_argv !== undefined) checkArgv(inst.upgrade_argv, `installers[${i}].upgrade_argv`, errors);
     });
+    // preflight/verify compare the binary on PATH against a single minimum, so
+    // per-installer minimums must not diverge (the fallback installer's minimum
+    // would silently apply on unmatched platforms).
+    const minimums = new Set(manifest.installers.map((i) => i.min_version));
+    if (minimums.size > 1) {
+      errors.push('installers: min_version must be identical across all installers');
+    }
   }
 
   for (const probe of ['detect', 'version_check', 'auth_status']) {

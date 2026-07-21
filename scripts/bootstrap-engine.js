@@ -43,6 +43,18 @@ function parseSemver(text) {
   return match.slice(1, 4).map((part) => Number.parseInt(part, 10));
 }
 
+// Anchor version extraction to the manifest's own stdout_regex when present, so an
+// update banner containing another semver (e.g. "new release 2.99.0 available") cannot
+// be mistaken for the installed version.
+function extractVersionText(spec, result) {
+  const stdout = result.stdout ?? '';
+  if (spec?.stdout_regex) {
+    const match = stdout.match(new RegExp(spec.stdout_regex));
+    if (match) return match[0];
+  }
+  return stdout;
+}
+
 function compareSemver(a, b) {
   for (let i = 0; i < 3; i++) {
     if (a[i] > b[i]) return 1;
@@ -53,7 +65,7 @@ function compareSemver(a, b) {
 
 function versionMeetsMinimum(manifest, platform, result) {
   if (!matchSuccess(manifest.version_check.success, result)) return false;
-  const current = parseSemver(result.stdout);
+  const current = parseSemver(extractVersionText(manifest.version_check.success, result));
   const minimum = parseSemver(selectInstaller(manifest, platform).min_version);
   if (!current || !minimum) return false;
   return compareSemver(current, minimum) >= 0;
@@ -135,12 +147,15 @@ export function createEngine({
       const steps = [];
       if (!preflight.installed || !preflight.version_ok) {
         const installer = selectInstaller(manifest, platform);
+        // installed-but-outdated uses the dedicated upgrade argv when the package
+        // manager's install command does not upgrade in place (e.g. scoop).
+        const upgrading = preflight.installed && Array.isArray(installer.upgrade_argv);
         steps.push({
           kind: 'install',
           approval_required: true,
-          argv: installer.argv,
+          argv: upgrading ? installer.upgrade_argv : installer.argv,
           disclosure:
-            `설치: ${manifest.binary} — package coordinate '${installer.package_coordinate}' (${installer.package_manager})\n` +
+            `${upgrading ? '업그레이드' : '설치'}: ${manifest.binary} — package coordinate '${installer.package_coordinate}' (${installer.package_manager})\n` +
             `공식 근거: ${manifest.docs_url}\n` +
             `전역 변경: ${(installer.global_changes ?? []).join(', ') || '없음'}\n` +
             `되돌리기: ${JSON.stringify(manifest.uninstall[installer.package_manager] ?? Object.values(manifest.uninstall)[0])}`,
@@ -238,21 +253,26 @@ export async function runBootstrap(engine, serviceId, { approvals = {}, adHocInp
     const verified = await engine.verify(manifest);
     return { phase: 'verify', tier: resolved.tier, already_complete: true, preflight, verified };
   }
-  const applied = await engine.apply(manifest, plan, approvals, sessionId);
-  const failed = applied.some((r) => r.ok === false && r.skipped !== true);
-  const pendingApprovals = applied.filter((r) => r.reason === 'approval_missing').map((r) => r.step);
+  // Approve gate runs BEFORE apply (PRD state machine: plan → approve → apply).
+  // All missing approvals are reported at once; nothing executes until every
+  // approval-required step has been explicitly approved.
+  const pendingApprovals = plan.steps
+    .filter((s) => s.approval_required === true && approvals[s.kind] !== true)
+    .map((s) => s.kind);
   if (pendingApprovals.length > 0) {
     return {
       phase: 'approve',
       tier: resolved.tier,
       preflight,
       plan,
-      applied,
+      applied: [],
       verified: null,
       pending_approvals: pendingApprovals,
       recover: null,
     };
   }
+  const applied = await engine.apply(manifest, plan, approvals, sessionId);
+  const failed = applied.some((r) => r.ok === false && r.skipped !== true);
   const verified = failed ? null : await engine.verify(manifest);
   return {
     phase: failed ? 'recover' : 'verify',

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "manifest_revision": 1,
-  "reviewed_at": "2026-07-20",
+  "manifest_revision": 2,
+  "reviewed_at": "2026-07-22",
   "tier": 1,
   "service_id": "vercel",
   "binary": "vercel",
@@ -20,6 +20,7 @@
       "package_manager": "homebrew",
       "package_coordinate": "vercel-cli",
       "argv": ["brew", "install", "vercel-cli"],
+      "upgrade_argv": ["brew", "upgrade", "vercel-cli"],
       "min_version": "39.0.0",
       "global_changes": ["Homebrew Cellar에 vercel-cli 설치"]
     }

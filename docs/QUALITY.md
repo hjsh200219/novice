@@ -3,7 +3,7 @@
 ## Health Stack (검사 명령 SSOT)
 | 목적 | 명령 | 비고 |
 |---|---|---|
-| 전체 테스트 | `npm test` | unit + integration (157) |
+| 전체 테스트 | `npm test` | unit + integration (160) |
 | 단위 | `npm run test:unit` | |
 | 통합 | `npm run test:integration` | safety corpus·mutation·latency 벤치 포함 |
 | 커버리지 | `npm run test:coverage` | node 내장 `--experimental-test-coverage` (zero-dep). 현재 line ~95% |

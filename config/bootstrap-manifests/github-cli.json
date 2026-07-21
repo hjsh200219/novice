@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "manifest_revision": 1,
-  "reviewed_at": "2026-07-20",
+  "manifest_revision": 2,
+  "reviewed_at": "2026-07-22",
   "tier": 1,
   "service_id": "github",
   "binary": "gh",
@@ -12,6 +12,7 @@
       "package_manager": "homebrew",
       "package_coordinate": "gh",
       "argv": ["brew", "install", "gh"],
+      "upgrade_argv": ["brew", "upgrade", "gh"],
       "min_version": "2.40.0",
       "global_changes": ["Homebrew Cellar에 gh 설치"]
     },
@@ -28,6 +29,7 @@
       "package_manager": "winget",
       "package_coordinate": "GitHub.cli",
       "argv": ["winget", "install", "--id", "GitHub.cli", "--exact"],
+      "upgrade_argv": ["winget", "upgrade", "--id", "GitHub.cli", "--exact"],
       "min_version": "2.40.0",
       "global_changes": ["시스템에 GitHub CLI 설치"]
     }

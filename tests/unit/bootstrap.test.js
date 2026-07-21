@@ -326,7 +326,7 @@ test('audit state stores only step metadata — no argv, output, or token-like c
   const raw = fs.readFileSync(auditFile, 'utf8');
   const audit = JSON.parse(raw);
   assert.equal(audit.service_id, 'vercel');
-  assert.equal(audit.manifest_revision, 1);
+  assert.equal(audit.manifest_revision, manifest.manifest_revision);
   assert.ok(audit.steps.every((s) => ['step', 'exit_status', 'at'].every((k) => k in s)));
   assert.ok(!raw.includes('argv'), 'no argv key');
   assert.ok(!raw.includes('npm install'), 'no argv text');
@@ -417,17 +417,21 @@ test('runBootstrap stops at approval phase when required approvals are missing',
   const manifest = loadFixtureManifest('vercel.json');
   const scenario = { 'vercel --version': { code: 1 }, 'vercel whoami': { code: 1 } };
 
+  // No approvals: every approval-required step is reported at once, nothing executes.
   {
     const { exec, calls } = mockExec(scenario);
     const engine = createEngine({ exec, platform: 'darwin' });
     const report = await runBootstrap(engine, manifest.service_id, {});
     assert.equal(report.phase, 'approve');
     assert.equal(report.verified, null);
-    assert.deepEqual(report.pending_approvals, ['install']);
+    assert.deepEqual(report.pending_approvals, ['install', 'login']);
+    assert.deepEqual(report.applied, []);
     assert.ok(!calls.some((argv) => argv.join(' ').includes('install')), 'install must wait for approval');
     assert.ok(!calls.some((argv) => argv.join(' ').includes('login')), 'login must wait for approval');
   }
 
+  // Partial approvals: approve comes before apply (PRD state machine), so even the
+  // approved step does not run until every approval is present.
   {
     const { exec, calls } = mockExec(scenario);
     const engine = createEngine({ exec, platform: 'darwin' });
@@ -435,7 +439,72 @@ test('runBootstrap stops at approval phase when required approvals are missing',
     assert.equal(report.phase, 'approve');
     assert.equal(report.verified, null);
     assert.deepEqual(report.pending_approvals, ['login']);
-    assert.ok(calls.some((argv) => argv.join(' ').includes('npm install --global vercel')), 'approved install ran');
-    assert.ok(!calls.some((argv) => argv.join(' ').includes('vercel login')), 'unapproved login did not run');
+    assert.deepEqual(report.applied, []);
+    assert.ok(!calls.some((argv) => argv.join(' ').includes('npm install --global vercel')), 'apply must wait for all approvals');
   }
+
+  // Full approvals: apply proceeds.
+  {
+    const { exec, calls } = mockExec(scenario);
+    const engine = createEngine({ exec, platform: 'darwin' });
+    const report = await runBootstrap(engine, manifest.service_id, { approvals: { install: true, login: true } });
+    assert.notEqual(report.phase, 'approve');
+    assert.ok(calls.some((argv) => argv.join(' ') === 'npm install --global vercel'), 'approved install ran');
+    assert.ok(calls.some((argv) => argv.join(' ') === 'vercel login'), 'approved login ran');
+  }
+});
+
+test('plan proposes upgrade_argv when installed below min_version, install argv otherwise', async () => {
+  const manifest = loadFixtureManifest('supabase.json');
+
+  // Installed but outdated on win32 → scoop update (scoop install cannot upgrade in place).
+  {
+    const { exec } = mockExec({ 'supabase --version': { code: 0, stdout: '1.100.0' } });
+    const engine = createEngine({ exec, platform: 'win32' });
+    const preflight = await engine.preflight(manifest);
+    assert.equal(preflight.installed, true);
+    assert.equal(preflight.version_ok, false);
+    const plan = engine.plan(manifest, preflight);
+    const install = plan.steps.find((s) => s.kind === 'install');
+    assert.deepEqual(install.argv, ['scoop', 'update', 'supabase']);
+    assert.match(install.disclosure, /^업그레이드:/);
+  }
+
+  // Not installed at all → plain install argv even though upgrade_argv exists.
+  {
+    const { exec } = mockExec({ 'supabase --version': { code: 1 } });
+    const engine = createEngine({ exec, platform: 'win32' });
+    const preflight = await engine.preflight(manifest);
+    assert.equal(preflight.installed, false);
+    const plan = engine.plan(manifest, preflight);
+    const install = plan.steps.find((s) => s.kind === 'install');
+    assert.deepEqual(install.argv, ['scoop', 'install', 'supabase']);
+    assert.match(install.disclosure, /^설치:/);
+  }
+});
+
+test('version parsing anchors to the version_check stdout_regex, ignoring banner semvers', async () => {
+  const manifest = loadFixtureManifest('github-cli.json');
+  const banner = 'A new release of gh is available: 2.99.0\ngh version 2.39.0 (2026-01-01)';
+  const { exec } = mockExec({ 'gh --version': { code: 0, stdout: banner } });
+  const engine = createEngine({ exec, platform: 'darwin' });
+  const preflight = await engine.preflight(manifest);
+  assert.equal(preflight.installed, true);
+  // 2.39.0 (anchored "gh version" match) < 2.40.0 minimum; banner 2.99.0 must not win.
+  assert.equal(preflight.version_ok, false);
+});
+
+test('validateManifest enforces uniform min_version and vets upgrade_argv', () => {
+  const base = loadFixtureManifest('github-cli.json');
+
+  const diverged = structuredClone(base);
+  diverged.installers[1].min_version = '2.50.0';
+  assert.ok(validateManifest(diverged).errors.some((e) => e.includes('min_version must be identical')));
+
+  const badUpgrade = structuredClone(base);
+  badUpgrade.installers[0].upgrade_argv = ['curl', '-fsSL', 'https://example.com/upgrade.sh'];
+  assert.ok(validateManifest(badUpgrade).errors.some((e) => e.includes('upgrade_argv') && e.includes('forbidden')));
+
+  const shipped = validateManifest(base);
+  assert.deepEqual(shipped.errors, []);
 });
