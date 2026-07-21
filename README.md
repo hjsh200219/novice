@@ -17,6 +17,8 @@
 
 ## 설치
 
+### marketplace (권장)
+
 Claude Code 안에서 marketplace를 등록한 뒤 설치합니다:
 
 ```
@@ -25,18 +27,54 @@ Claude Code 안에서 marketplace를 등록한 뒤 설치합니다:
 /reload-plugins
 ```
 
+GitHub shorthand 대신 git URL이나 로컬 클론 경로도 같은 명령으로 등록할 수 있습니다:
+`/plugin marketplace add https://github.com/hjsh200219/novice.git`,
+`/plugin marketplace add <클론 경로>`.
+
 - 설치 확인: `/plugin` 목록에서 novice가 enabled인지 확인하고, `/novice`를 실행해
   상태 대시보드가 나오면 정상입니다.
 - **업데이트**: 설치본은 캐시 복사본이라 자동 갱신되지 않습니다. `/plugin` 메뉴에서
   novice marketplace를 update한 뒤 플러그인을 재설치하세요.
-- 로컬 개발·수정 테스트: 리포를 clone한 뒤 `claude --plugin-dir <리포 경로>`로
-  설치 없이 로드할 수 있습니다.
-- npm 채널: [`claude-novice`](https://www.npmjs.com/package/claude-novice) 패키지로도
-  배포됩니다. `npm install -g claude-novice` 후 `claude --plugin-dir "$(npm root -g)/claude-novice"`로
-  로드하거나, 자체 marketplace의 plugin `source`에 `{"source":"npm","package":"claude-novice"}`를
-  쓸 수 있습니다.
 - 제거: `/plugin uninstall novice` — 제거하면 안전 게이트도 함께 사라집니다
   (아래 위협 모델 참조).
+
+### 프로젝트 settings.json 자동 설치 (팀·프로젝트 단위)
+
+작업 리포의 `.claude/settings.json`에 아래를 커밋해 두면, 그 리포를 신뢰한 사람에게
+Claude Code가 novice 설치를 자동으로 제안합니다. `/plugin` 명령을 배울 필요가 없어
+비개발자 팀원에게 가장 쉬운 경로입니다.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "novice": { "source": { "source": "github", "repo": "hjsh200219/novice" } }
+  },
+  "enabledPlugins": { "novice@novice": true }
+}
+```
+
+### npm
+
+[`claude-novice`](https://www.npmjs.com/package/claude-novice) 패키지로도 배포됩니다.
+`npm install -g claude-novice` 후 `claude --plugin-dir "$(npm root -g)/claude-novice"`로
+로드하거나, 자체 marketplace의 plugin `source`에 `{"source":"npm","package":"claude-novice"}`를
+쓸 수 있습니다.
+
+### 설치 없이 세션 로드 (개발·테스트)
+
+설치하지 않고 현재 세션에만 로드합니다. 세션이 끝나면 사라집니다.
+
+```bash
+claude --plugin-dir <리포 클론 경로>     # 로컬 개발·수정 테스트
+claude --plugin-url <플러그인 ZIP URL>   # 호스팅된 ZIP 원샷 테스트 (CI artifact 등)
+```
+
+### 기타
+
+- **컨테이너·CI**: `CLAUDE_CODE_PLUGIN_SEED_DIR`로 이미지 빌드 시 플러그인 캐시를 미리
+  심어 오프라인·자동화 환경에 배포할 수 있습니다.
+- **`~/.claude/skills/` 수동 복사는 지원하지 않습니다** — 스킬 파일만 로드되고 hook이
+  로드되지 않아 안전 게이트·학습층이 동작하지 않습니다.
 
 ## 사용법
 
@@ -202,6 +240,8 @@ destructive commands, runaway cost, and secret exposure.
 
 ## Installation
 
+### marketplace (recommended)
+
 Register the marketplace inside Claude Code, then install:
 
 ```
@@ -210,17 +250,53 @@ Register the marketplace inside Claude Code, then install:
 /reload-plugins
 ```
 
+Instead of the GitHub shorthand, a git URL or a local clone path works with the same command:
+`/plugin marketplace add https://github.com/hjsh200219/novice.git`,
+`/plugin marketplace add <clone path>`.
+
 - Verify: check that novice is enabled in `/plugin`, then run `/novice` — a status
   dashboard means it's working.
 - **Updating**: the installed copy is a cached snapshot and does not auto-update. Update the
   novice marketplace in the `/plugin` menu, then reinstall the plugin.
-- Local development: clone the repo and load it without installing via
-  `claude --plugin-dir <repo path>`.
-- npm channel: also published as [`claude-novice`](https://www.npmjs.com/package/claude-novice).
-  `npm install -g claude-novice` then `claude --plugin-dir "$(npm root -g)/claude-novice"`,
-  or point your own marketplace's plugin `source` at `{"source":"npm","package":"claude-novice"}`.
 - Uninstall: `/plugin uninstall novice` — removing the plugin also removes the safety gate
   (see the threat model below).
+
+### Auto-install via project settings.json (team / per-repo)
+
+Commit the following to your repo's `.claude/settings.json`, and Claude Code will offer to
+install novice automatically for anyone who trusts that repo. No `/plugin` commands to learn —
+the easiest path for non-developer teammates.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "novice": { "source": { "source": "github", "repo": "hjsh200219/novice" } }
+  },
+  "enabledPlugins": { "novice@novice": true }
+}
+```
+
+### npm
+
+Also published as [`claude-novice`](https://www.npmjs.com/package/claude-novice).
+`npm install -g claude-novice` then `claude --plugin-dir "$(npm root -g)/claude-novice"`,
+or point your own marketplace's plugin `source` at `{"source":"npm","package":"claude-novice"}`.
+
+### Session-only load, no install (development / testing)
+
+Loads for the current session only, without installing. Gone when the session ends.
+
+```bash
+claude --plugin-dir <repo clone path>   # local development / testing changes
+claude --plugin-url <plugin ZIP URL>    # one-shot test of a hosted ZIP (CI artifact, etc.)
+```
+
+### Other
+
+- **Containers / CI**: pre-seed the plugin cache into an image with
+  `CLAUDE_CODE_PLUGIN_SEED_DIR` for offline or automated environments.
+- **Manually copying into `~/.claude/skills/` is not supported** — only skill files load;
+  hooks do not, so neither the safety gate nor the learning layer works.
 
 ## Usage
 
