@@ -1,6 +1,6 @@
 ---
 name: claude-code-plugin-platform-facts
-description: 설치 runtime 바이너리(2.1.215) grep으로 확정한 Claude Code 플러그인·hook 플랫폼 사실 (3차 판정 뒤집힘 반영)
+description: 설치 runtime 바이너리(2.1.215) grep·live 캡처로 확정한 Claude Code 플러그인·hook 플랫폼 사실 + 설치 채널(공식 문서 조사, 미실측)
 type: reference
 created: 2026-07-20
 ---
@@ -34,6 +34,14 @@ created: 2026-07-20
 - **bare-name 설치 가능**: `/plugin marketplace add owner/repo` 후 `/plugin install <name>` (이름 유일하면 `@marketplace` 생략). 내부적으로 `name@marketplace`로 해석.
 - 설치 시 `--config KEY=VALUE`로 userConfig 지정. 미지정 시 "N userConfig options not yet set" 경고.
 - hook/skill은 **새 세션부터** 로드됨 (설치 세션엔 미반영).
+
+**설치 채널 (7차, 2026-07-21 — 공식 문서 조사, 바이너리 미실측 주의)**
+아래는 docs 기반이라 6차까지의 실측 사실과 신뢰 등급이 다르다. README 설치 절(한/영)에 커밋 8dea032로 반영됨.
+- `marketplace add`는 GitHub shorthand(`owner/repo`) 외에도 **git URL**(`.git` suffix, GitLab/사설 저장소 포함, `#ref`로 브랜치/태그 지정)과 **로컬 디렉터리/marketplace.json 경로**를 모두 받는다.
+- **팀 배포 SSOT** = 프로젝트 `.claude/settings.json`의 `extraKnownMarketplaces`(marketplace 등록) + `enabledPlugins`(예: `"novice@novice": true`). 리포를 신뢰한 팀원에게 자동 설치가 제안된다.
+- `claude --plugin-dir <경로>` / `claude --plugin-url <ZIP URL>`은 **세션 한정 로드**이지 영구 설치가 아니다. 개발/테스트·CI artifact 검증용. (payload 캡처에 `--plugin-dir`를 쓰는 이유도 이 세션 격리성 — [[hook-payload-capture-method]])
+- 컨테이너/CI 사전 주입: `CLAUDE_CODE_PLUGIN_CACHE_DIR`(이미지 빌드 시 캐시 시드) + `CLAUDE_CODE_PLUGIN_SEED_DIR`(런타임).
+- `~/.claude/skills/`에 수동 복사하면 **skill만 로드되고 hook은 로드되지 않는다**. novice처럼 hook 기반 플러그인엔 부적합 — 플러그인 설치 또는 `--plugin-dir` 로드여야 안전 게이트가 산다.
 
 **검증 방법 (재사용)**
 ```
