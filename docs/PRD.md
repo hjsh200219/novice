@@ -4,7 +4,7 @@ title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-21
 revision: 12
 mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20); rev 12 — 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 전면 제거 → benign 미지원문법 false-prompt 해소, 파싱 불가·모호는 CC 네이티브 위임), /novice front door 스킬 추가 (사용자 결정 2026-07-21)
-implementation: 완료 기준 A~D 충족, 테스트 147/147 통과 (외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
+implementation: 완료 기준 A~D 충족, 테스트 157/157 통과 (외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -271,7 +271,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 
 | 위협 | 관찰 지점 | P0 동작 | 보증하지 않는 범위 |
 |---|---|---|---|
-| 로컬 파괴 명령 | `PreToolUse`의 Bash·PowerShell command | bare 명령을 파싱해 catastrophic(홈·루트·프로젝트 루트 삭제, `dd`/`mkfs`/`shred`, disk-format cmdlet)이면 deny | 난독화·파이프/체인/치환 낀 명령·일반 폴더 삭제·플러그인 밖 실행 |
+| 로컬 파괴 명령 | `PreToolUse`의 Bash·PowerShell command | bare 명령과 제한된 단순 prefix(`NAME=value`, `env`, `command`, `sudo`)를 파싱해 catastrophic(홈·루트·프로젝트 루트 삭제, `dd`/`mkfs`/`shred`, disk-format cmdlet)이면 deny | 복잡한 wrapper 옵션·난독화·파이프/체인/치환 낀 명령·일반 폴더 삭제·플러그인 밖 실행 |
 | Git history 파괴 | `git push --force` | protected branch 대상이면 deny | 비보호 branch force-push, `reset --hard`·`clean`(위임), 다른 Git client 작업 |
 | DB/원격 리소스 삭제 | CLI 및 `mcp__.*` tool name/input | production·unknown 대상 파괴 작업 deny | staging/dev 대상(위임), 외부 콘솔 직접 작업 |
 | 시크릿 commit | commit 직전 index/worktree scan | known-secret scanner와 fixture로 deny | 미지원 포맷, 암호화·난독화된 시크릿, 스캔 불가(대용량·exotic) |
@@ -283,6 +283,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 - **deny-only 코어. `ask` 티어는 없다.** 게이트는 긍정적으로 식별한 파괴 비가역 작업과 노출된 시크릿 값에만 `permissionDecision: deny`를 낸다. 그 밖의 모든 명령(파싱 불가·모호 포함)은 의견을 내지 않고(no opinion) Claude Code 네이티브 권한 프롬프트에 위임한다. 애매한 상황에서 확인 질문을 만들지 않는 이유는 benign 명령에 대한 false-prompt(예: `find … | sort`)를 제거하기 위해서다.
 - `deny` 대상: 홈·프로젝트 전체 삭제(`rm -rf ~`·`/`·프로젝트 루트), `dd`/`mkfs`/`shred`·disk-format cmdlet, protected branch force-push, production/unknown 원격 파괴 작업, raw secret 포함 commit/deploy/명령줄.
 - session-wide allow나 패턴 영구 예외는 제공하지 않는다. deny는 해당 tool call 한 번에 대한 판정이다.
+- `permission_mode === 'bypassPermissions'`는 사용자가 전 리스크를 인수한 명시적 예외다. 이 모드에서는 게이트가 즉시 stand down하며 Bash·MCP를 포함해 어떤 판정도 출력하지 않는다.
 - 안전 hook의 JSON 오류·내부 예외·입력 상한 초과는 exit 2/deny로 처리한다(fail closed). 파싱 불가한 문법은 deny하지 않고 위임한다. 플랫폼이 timeout·강제 종료를 non-blocking으로 처리하는 경우는 제품 보증 범위에서 제외한다.
 - 고정 패턴 목록, protected branch 목록, secret fixture와 benign fixture를 version 관리한다.
 - MVP secret detector는 `safety-rules.json`의 고정 패턴과 entropy 보조 규칙으로 구현하며 새 외부 dependency를 추가하지 않는다. 후보 바이트는 process memory에서만 검사하고 원문을 stdout/stderr/state/metric에 남기지 않는다. 전문 secret scanner 연동은 P1 후보로 둔다.
@@ -292,7 +293,7 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 
 #### 지원 command grammar와 입력 상한
 
-- P0는 범용 shell parser를 제공하지 않는다. Bash는 **단일 command + argv**의 유한 lexical grammar(공백 분리, 따옴표 literal, escape, flag, `--`, 명시적 path argument)를 파싱한다. PowerShell은 첫 토큰(Verb-Noun cmdlet)만 식별해 disk-format 계열 deny 리스트와 대조한다 — 인자 tokenization은 하지 않는다.
+- P0는 범용 shell parser를 제공하지 않는다. Bash는 **단일 command + argv**의 유한 lexical grammar(공백 분리, 따옴표 literal, escape, flag, `--`, 명시적 path argument)를 파싱하고, 선행 env assignment와 옵션 없는 `env`·`command`·`sudo`만 내부 명령으로 정규화한다. 복잡한 wrapper 옵션은 위임한다. PowerShell은 첫 토큰(Verb-Noun cmdlet)만 식별해 disk-format 계열 deny 리스트와 대조한다 — 인자 tokenization은 하지 않는다.
 - shell control operator(`;`, newline, `&&`, `||`, pipe, redirect), command/process substitution, heredoc, `eval`, nested shell, unescaped glob은 미지원이다. bootstrap engine은 항상 exec-form argv와 한 번에 한 명령을 사용하므로 이 grammar 안에 머문다.
 - Git은 `commit`, `push`의 versioned subgrammar를 파싱한다(force-push·commit 시크릿 스캔). 일반 commit, `-a`, resolved pathspec만 candidate tree를 계산하고 그 밖의 조합은 위임한다. `reset`·`clean`은 판정하지 않고 위임한다.
 - shell command 입력은 64 KiB, scan 대상 단일 파일은 1 MiB, 한 tool call의 총 candidate bytes는 5 MiB로 제한한다. **명령줄 입력**이 상한을 넘으면 안전하게 검사할 수 없으므로 deny하고 분할 방법을 안내한다. scan 대상 **파일**이 상한을 넘으면 차단하지 않고 위임한다(긍정 탐지 시에만 deny).
@@ -393,7 +394,7 @@ novice/
 
 > 구현은 단계를 나누지 않고 **전체 기능을 한 번에 개발**한다(사용자 결정, revision 5). 아래 완료 기준은 순차 gate가 아니라 배포 판정용 단일 체크리스트이며 영역별로 묶었을 뿐이다. 단, 플랫폼 contract fixture 캡처(A)는 나머지 구현의 전제이므로 착수 직후 가장 먼저 수행한다.
 
-> **구현 상태 (2026-07-21, rev 12):** 완료 기준 A~D 전 항목 구현·통과. 테스트 147/147 (외부 dependency 0), architect 리뷰 APPROVE, mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
+> **구현 상태 (2026-07-22, rev 12):** 완료 기준 A~D 전 항목 구현·통과. 테스트 157/157 (외부 dependency 0), mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
 
 **산출물 (일괄)**
 

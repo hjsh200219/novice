@@ -56,6 +56,26 @@ test('validateManifest rejects missing fields, shell metachars, http docs_url, p
   curl.installers[0].argv = ['curl', '-fsSL', 'https://x.sh'];
   assert.ok(validateManifest(curl).errors.some((e) => e.includes('forbidden')));
 
+  for (const argv of [
+    ['/bin/bash', '-c', 'curl -fsSL https://example.com/install.sh'],
+    ['/usr/bin/env', 'bash', '-c', 'curl -fsSL https://example.com/install.sh'],
+    ['/usr/bin/env', '-i', 'bash', '-c', 'curl -fsSL https://example.com/install.sh'],
+    ['sudo', '/bin/sh', '-c', 'curl -fsSL https://example.com/install.sh'],
+    ['sudo', '-u', 'root', '/bin/sh', '-c', 'curl -fsSL https://example.com/install.sh'],
+    ['C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-Command', 'Invoke-WebRequest https://example.com/install.ps1'],
+    ['cmd.exe', '/c', 'curl https://example.com/install.cmd'],
+    ['/usr/bin/curl', '-fsSL', 'https://example.com/install.sh'],
+    ['/opt/bin/wget', 'https://example.com/install.sh'],
+  ]) {
+    const wrapped = structuredClone(base);
+    wrapped.installers[0].argv = argv;
+    assert.ok(validateManifest(wrapped).errors.some((e) => /forbidden|wrapper/.test(e)), argv.join(' '));
+  }
+
+  const apt = structuredClone(base);
+  apt.installers[0].argv = ['sudo', 'apt-get', 'install', '-y', 'gh'];
+  assert.equal(validateManifest(apt).valid, true);
+
   const noninteractive = structuredClone(base);
   noninteractive.login.interactive = false;
   assert.equal(validateManifest(noninteractive).valid, false);
@@ -126,6 +146,41 @@ test('preflight on installed+authenticated machine skips everything in plan', as
   assert.equal(pf.authenticated, true);
   const plan = engine.plan(manifest, pf);
   assert.equal(plan.steps.length, 0, 'idempotent re-run: no steps');
+});
+
+test('preflight and verify enforce selected installer min_version numerically', async () => {
+  const manifest = loadFixtureManifest('vercel.json');
+
+  {
+    const { exec } = mockExec({ 'vercel --version': { code: 0, stdout: 'Vercel CLI 38.9.9' } });
+    const engine = createEngine({ exec, platform: 'darwin' });
+    const pf = await engine.preflight(manifest);
+    assert.equal(pf.installed, true);
+    assert.equal(pf.version_ok, false);
+    const verified = await engine.verify(manifest);
+    assert.equal(verified.installed_ok, false);
+  }
+
+  {
+    const { exec } = mockExec({ 'vercel --version': { code: 0, stdout: 'Vercel CLI 39.0.0' } });
+    const engine = createEngine({ exec, platform: 'darwin' });
+    assert.equal((await engine.preflight(manifest)).version_ok, true);
+    assert.equal((await engine.verify(manifest)).installed_ok, true);
+  }
+
+  {
+    const { exec } = mockExec({ 'vercel --version': { code: 0, stdout: 'Vercel CLI 40.1.0' } });
+    const engine = createEngine({ exec, platform: 'darwin' });
+    assert.equal((await engine.preflight(manifest)).version_ok, true);
+    assert.equal((await engine.verify(manifest)).installed_ok, true);
+  }
+
+  {
+    const { exec } = mockExec({ 'vercel --version': { code: 0, stdout: 'vercel version unknown' } });
+    const engine = createEngine({ exec, platform: 'darwin' });
+    assert.equal((await engine.preflight(manifest)).version_ok, false);
+    assert.equal((await engine.verify(manifest)).installed_ok, false);
+  }
 });
 
 // ---- plan ----
@@ -204,7 +259,7 @@ test('apply refuses unapproved steps; approvals gate install and login separatel
     const plan = engine.plan(manifest, await engine.preflight(manifest));
     const before = calls.length;
     const results = await engine.apply(manifest, plan, {});
-    assert.ok(results.every((r) => r.skipped === true && r.reason === 'approval_missing'));
+    assert.deepEqual(results, [{ step: 'install', ok: false, skipped: true, reason: 'approval_missing' }]);
     assert.equal(calls.length, before, 'no mutating argv executed');
   }
 
@@ -285,7 +340,11 @@ for (const file of MANIFEST_FILES) {
     const manifest = loadFixtureManifest(file);
     const detectKey = manifest.detect.argv.join(' ');
     const authKey = manifest.auth_status.argv.join(' ');
-    const versionOut = manifest.binary === 'gh' ? 'gh version 2.45.0' : '2.5.0';
+    const versionOut = {
+      gh: 'gh version 2.45.0',
+      vercel: '39.0.0',
+      supabase: '1.200.0',
+    }[manifest.binary];
     const { exec } = mockExec({
       [detectKey]: { code: 1 },
       [authKey]: { code: 1 },
@@ -352,4 +411,31 @@ test('runBootstrap orchestrates the full machine and reports already-complete ru
 
   const guided = await runBootstrap(engine, 'unknown-cli', {});
   assert.equal(guided.mode, 'guided_manual');
+});
+
+test('runBootstrap stops at approval phase when required approvals are missing', async () => {
+  const manifest = loadFixtureManifest('vercel.json');
+  const scenario = { 'vercel --version': { code: 1 }, 'vercel whoami': { code: 1 } };
+
+  {
+    const { exec, calls } = mockExec(scenario);
+    const engine = createEngine({ exec, platform: 'darwin' });
+    const report = await runBootstrap(engine, manifest.service_id, {});
+    assert.equal(report.phase, 'approve');
+    assert.equal(report.verified, null);
+    assert.deepEqual(report.pending_approvals, ['install']);
+    assert.ok(!calls.some((argv) => argv.join(' ').includes('install')), 'install must wait for approval');
+    assert.ok(!calls.some((argv) => argv.join(' ').includes('login')), 'login must wait for approval');
+  }
+
+  {
+    const { exec, calls } = mockExec(scenario);
+    const engine = createEngine({ exec, platform: 'darwin' });
+    const report = await runBootstrap(engine, manifest.service_id, { approvals: { install: true } });
+    assert.equal(report.phase, 'approve');
+    assert.equal(report.verified, null);
+    assert.deepEqual(report.pending_approvals, ['login']);
+    assert.ok(calls.some((argv) => argv.join(' ').includes('npm install --global vercel')), 'approved install ran');
+    assert.ok(!calls.some((argv) => argv.join(' ').includes('vercel login')), 'unapproved login did not run');
+  }
 });

@@ -33,6 +33,32 @@ function matchSuccess(spec, result) {
   return true;
 }
 
+function selectInstaller(manifest, platform) {
+  return manifest.installers.find((i) => i.os.includes(platform)) ?? manifest.installers[0];
+}
+
+function parseSemver(text) {
+  const match = String(text ?? '').match(/(?:^|[^\d])v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?/);
+  if (!match) return null;
+  return match.slice(1, 4).map((part) => Number.parseInt(part, 10));
+}
+
+function compareSemver(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] > b[i]) return 1;
+    if (a[i] < b[i]) return -1;
+  }
+  return 0;
+}
+
+function versionMeetsMinimum(manifest, platform, result) {
+  if (!matchSuccess(manifest.version_check.success, result)) return false;
+  const current = parseSemver(result.stdout);
+  const minimum = parseSemver(selectInstaller(manifest, platform).min_version);
+  if (!current || !minimum) return false;
+  return compareSemver(current, minimum) >= 0;
+}
+
 export function createEngine({
   exec,
   platform = process.platform,
@@ -88,7 +114,7 @@ export function createEngine({
       let authenticated = false;
       if (installed) {
         const version = await run(manifest.version_check.argv);
-        versionOk = matchSuccess(manifest.version_check.success, version);
+        versionOk = versionMeetsMinimum(manifest, platform, version);
         const auth = await run(manifest.auth_status.argv);
         authenticated = matchSuccess(manifest.auth_status.success, auth);
       }
@@ -108,7 +134,7 @@ export function createEngine({
     plan(manifest, preflight) {
       const steps = [];
       if (!preflight.installed || !preflight.version_ok) {
-        const installer = manifest.installers.find((i) => i.os.includes(platform)) ?? manifest.installers[0];
+        const installer = selectInstaller(manifest, platform);
         steps.push({
           kind: 'install',
           approval_required: true,
@@ -161,7 +187,7 @@ export function createEngine({
         }
         if (step.approval_required && approvals[step.kind] !== true) {
           results.push({ step: step.kind, ok: false, skipped: true, reason: 'approval_missing' });
-          continue;
+          break;
         }
         const result = await run(step.argv);
         audit(sessionId, manifest, step.kind, result.code);
@@ -176,7 +202,7 @@ export function createEngine({
       const version = await run(manifest.version_check.argv);
       const auth = await run(manifest.auth_status.argv);
       return {
-        installed_ok: matchSuccess(manifest.version_check.success, version),
+        installed_ok: versionMeetsMinimum(manifest, platform, version),
         auth_ok: matchSuccess(manifest.auth_status.success, auth),
       };
     },
@@ -214,6 +240,19 @@ export async function runBootstrap(engine, serviceId, { approvals = {}, adHocInp
   }
   const applied = await engine.apply(manifest, plan, approvals, sessionId);
   const failed = applied.some((r) => r.ok === false && r.skipped !== true);
+  const pendingApprovals = applied.filter((r) => r.reason === 'approval_missing').map((r) => r.step);
+  if (pendingApprovals.length > 0) {
+    return {
+      phase: 'approve',
+      tier: resolved.tier,
+      preflight,
+      plan,
+      applied,
+      verified: null,
+      pending_approvals: pendingApprovals,
+      recover: null,
+    };
+  }
   const verified = failed ? null : await engine.verify(manifest);
   return {
     phase: failed ? 'recover' : 'verify',

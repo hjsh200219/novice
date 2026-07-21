@@ -22,6 +22,6 @@
 ## 현재 추정 (2026-07-20, setup 직후)
 - 문서/맵: AGENTS map·PRD·tech-debt·정직성 문서 → 높음
 - 아키텍처/강제: layer-rules + verify-docs → 중상
-- 품질/테스트: 149 tests + mutation + latency 벤치 → 높음 (knip 없음은 zero-dep 대체로 상쇄)
+- 품질/테스트: 157 tests + mutation + latency 벤치 → 높음 (knip 없음은 zero-dep 대체로 상쇄)
 - 안전/운영: permissions.deny + 시크릿 스캔 → 중상 (CI/husky 없음)
 - 추정 등급: **L4** 초입. 정밀 채점은 `/sh:harness-gc`로.

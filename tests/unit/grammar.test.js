@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenizeShell, isPowershellCommand, parseGit, baseName } from '../../scripts/lib/grammar.js';
+import { tokenizeShell, unwrapCommandArgv, isPowershellCommand, parseGit, baseName } from '../../scripts/lib/grammar.js';
 
 test('tokenizes plain argv with flags, --, and paths', () => {
   const r = tokenizeShell('git commit -m "fix: login bug" -- src/app.js');
@@ -48,6 +48,23 @@ test('baseName strips directories on both separators', () => {
   assert.equal(baseName('/usr/bin/git'), 'git');
   assert.equal(baseName('C:\\tools\\git.exe'), 'git.exe');
   assert.equal(baseName('git'), 'git');
+});
+
+test('unwrapCommandArgv removes env assignments and simple execution wrappers', () => {
+  assert.deepEqual(unwrapCommandArgv(['FOO=bar', 'rm', '-rf', '/']), ['rm', '-rf', '/']);
+  assert.deepEqual(unwrapCommandArgv(['env', 'FOO=bar', 'rm', '-rf', '/']), ['rm', '-rf', '/']);
+  assert.deepEqual(unwrapCommandArgv(['/usr/bin/env', 'rm', '-rf', '/']), ['rm', '-rf', '/']);
+  assert.deepEqual(unwrapCommandArgv(['command', 'rm', '-rf', '/']), ['rm', '-rf', '/']);
+  assert.deepEqual(unwrapCommandArgv(['sudo', 'rm', '-rf', '/']), ['rm', '-rf', '/']);
+  assert.deepEqual(unwrapCommandArgv(['command', 'git', 'push', '--force', 'origin', 'main']), ['git', 'push', '--force', 'origin', 'main']);
+});
+
+test('unwrapCommandArgv delegates non-executing or unsafe wrapper forms', () => {
+  assert.equal(unwrapCommandArgv(['command', '-v', 'rm']), null);
+  assert.equal(unwrapCommandArgv(['command', '-V', 'git']), null);
+  assert.equal(unwrapCommandArgv(['env', '-i', 'rm', '-rf', '/']), null);
+  assert.equal(unwrapCommandArgv(['sudo', '-u', 'root', 'rm', '-rf', '/']), null);
+  assert.equal(unwrapCommandArgv([]), null);
 });
 
 // ---- PowerShell grammar ----

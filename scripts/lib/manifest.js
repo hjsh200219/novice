@@ -5,9 +5,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pluginRoot } from './secrets.js';
+import { baseName, unwrapCommandArgv } from './grammar.js';
 
 const SHELL_META = /[|;&><`]/;
-const FORBIDDEN_ARGV0 = new Set(['curl', 'wget', 'sh', 'bash', 'zsh', 'eval']);
+const FORBIDDEN_ARGV0 = new Set([
+  'curl', 'wget', 'sh', 'bash', 'zsh', 'dash', 'ksh', 'csh', 'tcsh', 'fish', 'ash', 'mksh', 'rbash',
+  'pwsh', 'powershell', 'cmd', 'eval',
+]);
+
+function executableName(token) {
+  return baseName(token).toLowerCase().replace(/\.(?:exe|cmd|bat)$/, '');
+}
 
 function checkArgv(argv, label, errors) {
   if (!Array.isArray(argv) || argv.length === 0 || argv.some((t) => typeof t !== 'string')) {
@@ -17,8 +25,14 @@ function checkArgv(argv, label, errors) {
   for (const token of argv) {
     if (SHELL_META.test(token)) errors.push(`${label}: shell metacharacter in argv token: ${token}`);
   }
-  if (FORBIDDEN_ARGV0.has(argv[0])) {
-    errors.push(`${label}: remote-script/shell interpreter argv[0] is forbidden: ${argv[0]}`);
+  const normalized = unwrapCommandArgv(argv);
+  if (normalized == null) {
+    errors.push(`${label}: wrapper form cannot be safely resolved`);
+    return;
+  }
+  const base = executableName(normalized[0]);
+  if (FORBIDDEN_ARGV0.has(base)) {
+    errors.push(`${label}: remote-script/shell interpreter argv[0] is forbidden: ${normalized[0]}`);
   }
 }
 

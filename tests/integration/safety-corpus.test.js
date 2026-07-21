@@ -206,6 +206,45 @@ test('project protected-branch override is add-only and enforced', async () => {
   assert.equal(decisionOf(builtin).decision, 'deny', 'builtin protection cannot be removed');
 });
 
+test('simple wrappers are normalized before dangerous command analysis', async () => {
+  const dataDir = makeDataDir();
+  const cwd = makeRepo();
+  const cases = [
+    'FOO=bar rm -rf /',
+    'env rm -rf /',
+    'command rm -rf /',
+    'sudo rm -rf /',
+    'command git push --force origin main',
+  ];
+  for (const command of cases) {
+    const r = await commitScan(cwd, dataDir, command);
+    assert.equal(decisionOf(r).decision, 'deny', `${command} must be denied after wrapper normalization`);
+  }
+});
+
+test('non-executing command wrapper probes are delegated', async () => {
+  const dataDir = makeDataDir();
+  const cwd = makeRepo();
+  for (const command of ['command -v rm', 'command -V git']) {
+    const r = await commitScan(cwd, dataDir, command);
+    assert.equal(decisionOf(r), null, `${command} must be delegated`);
+  }
+});
+
+test('unquoted generic assignment secrets are blocked in commit scan', async () => {
+  const dataDir = makeDataDir();
+  const cwd = makeRepo();
+  const secret = 'qZ8xV3nM7kL2wR9tY6uP1sD4fG5hJ0aB';
+  fs.writeFileSync(path.join(cwd, '.env'), `API_KEY = ${secret}\n`);
+  execFileSync('git', ['-C', cwd, 'add', '.env']);
+
+  const r = await commitScan(cwd, dataDir, 'git commit -m "add env"');
+  const d = decisionOf(r);
+  assert.equal(d.decision, 'deny');
+  assert.match(d.reason, /generic-assignment/);
+  assert.ok(!d.reason.includes(secret), 'reason must never echo the secret');
+});
+
 test('novice off does not disable the gate', async () => {
   const dataDir = makeDataDir();
   const cwd = makeRepo();

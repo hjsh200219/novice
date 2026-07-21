@@ -22,6 +22,50 @@ export function baseName(p) {
   return parts[parts.length - 1] || p;
 }
 
+function isEnvAssignment(token) {
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(token);
+}
+
+// Normalize a simple argv vector by removing no-op execution wrappers and leading
+// environment assignments. Returns null when the wrapper form does not clearly
+// execute the remaining argv (for example `command -v`) or cannot be bounded.
+export function unwrapCommandArgv(argv) {
+  if (!Array.isArray(argv) || argv.length === 0 || !argv.every((x) => typeof x === 'string')) {
+    return null;
+  }
+
+  let out = argv.slice();
+  for (let guard = 0; guard < 8; guard++) {
+    while (out.length > 0 && isEnvAssignment(out[0])) out = out.slice(1);
+    if (out.length === 0) return null;
+
+    const base = baseName(out[0]);
+    if (base === 'env') {
+      const rest = out.slice(1);
+      if (rest.length === 0 || rest[0].startsWith('-')) return null;
+      out = rest;
+      continue;
+    }
+
+    if (base === 'command') {
+      const rest = out.slice(1);
+      if (rest.length === 0 || rest[0].startsWith('-')) return null;
+      out = rest;
+      continue;
+    }
+
+    if (base === 'sudo') {
+      const rest = out.slice(1);
+      if (rest.length === 0 || rest[0].startsWith('-')) return null;
+      out = rest;
+      continue;
+    }
+
+    return out;
+  }
+  return null;
+}
+
 function isSpecialEscapeTarget(ch) {
   // Characters where a leading backslash means "literal this shell-special char".
   return ch === ' ' || ch === '\t' || ch === ';' || ch === '&' || ch === '|' ||

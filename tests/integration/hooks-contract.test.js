@@ -90,14 +90,38 @@ test('PreToolUse contract: benign bash passes, dangerous bash denied, mcp destru
   assert.equal(benign.output, null);
 
   // Fixture deletes its own cwd → project-root deny.
-  const dangerous = fixture('pre-tool-use-bash-dangerous', { cwd });
+  const dangerous = fixture('pre-tool-use-bash-dangerous', { cwd, permission_mode: 'default' });
   dangerous.tool_input = { ...dangerous.tool_input, command: `rm -rf ${cwd}` };
   const d = await runHook('pre-tool-use.js', dangerous, { dataDir, cwd });
   assert.equal(decisionOf(d).decision, 'deny');
   assert.equal(d.output.hookSpecificOutput.hookEventName, 'PreToolUse');
 
-  const mcp = await runHook('pre-tool-use.js', fixture('pre-tool-use-mcp-destructive', { cwd }), { dataDir });
+  const mcp = await runHook('pre-tool-use.js', fixture('pre-tool-use-mcp-destructive', { cwd, permission_mode: 'default' }), { dataDir });
   assert.equal(decisionOf(mcp).decision, 'deny');
+});
+
+test('PreToolUse contract: bypassPermissions stands down for Bash and MCP without output', async () => {
+  const dataDir = makeDataDir();
+  const cwd = freshCwd();
+
+  const bash = fixture('pre-tool-use-bash-dangerous', {
+    cwd,
+    permission_mode: 'bypassPermissions',
+  });
+  bash.tool_input = { ...bash.tool_input, command: 'rm -rf /' };
+  const b = await runHook('pre-tool-use.js', bash, { dataDir, cwd });
+  assert.equal(b.code, 0);
+  assert.equal(b.output, null);
+  assert.equal(b.stdout, '');
+
+  const mcp = await runHook(
+    'pre-tool-use.js',
+    fixture('pre-tool-use-mcp-destructive', { cwd, permission_mode: 'bypassPermissions' }),
+    { dataDir },
+  );
+  assert.equal(mcp.code, 0);
+  assert.equal(mcp.output, null);
+  assert.equal(mcp.stdout, '');
 });
 
 test('PostToolUse/Failure/Batch contract: events flow through single-writer aggregation', async () => {

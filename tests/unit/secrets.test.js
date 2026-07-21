@@ -46,6 +46,32 @@ test('placeholders and low-entropy values are not flagged by the entropy-gated p
   }
 });
 
+test('generic assignment detects quoted and unquoted values with spacing variants', () => {
+  const cases = [
+    'API_KEY=qZ8xV3nM7kL2wR9tY6uP1sD4fG5hJ0aB',
+    'api_key = qZ8xV3nM7kL2wR9tY6uP1sD4fG5hJ0aB',
+    "token: 'qZ8xV3nM7kL2wR9tY6uP1sD4fG5hJ0aB'",
+    'password : "qZ8xV3nM7kL2wR9tY6uP1sD4fG5hJ0aB"',
+  ];
+  for (const line of cases) {
+    const findings = scanText(line).filter((f) => f.id === 'generic-assignment');
+    assert.equal(findings.length, 1, `generic assignment not detected: ${line}`);
+  }
+});
+
+test('unquoted generic assignment still ignores placeholders and low-entropy values', () => {
+  const benign = [
+    'API_KEY=your-api-key-goes-here-please',
+    'TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    'password=example_password_for_docs_1',
+    'credential=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  ];
+  for (const line of benign) {
+    const findings = scanText(line).filter((f) => f.id === 'generic-assignment');
+    assert.equal(findings.length, 0, `false positive on: ${line}`);
+  }
+});
+
 test('shannonEntropy sanity', () => {
   assert.ok(shannonEntropy('aaaaaaaaaa') < 1);
   assert.ok(shannonEntropy('qZ8xV3nM7kL2wR9tY6uP') > 3.5);

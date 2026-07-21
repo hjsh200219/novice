@@ -224,7 +224,7 @@
     },
     {
       "id": "generic-assignment",
-      "pattern": "(?i)\\b(?:api[_-]?key|secret|token|passwd|password|credential)s?\\b\\s*[:=]\\s*['\"]([A-Za-z0-9/+_=-]{20,})['\"]",
+      "pattern": "(?i)\\b(?:api[_-]?key|secret|token|passwd|password|credential)s?\\b\\s*[:=]\\s*['\"]?([A-Za-z0-9/+_=-]{20,})['\"]?",
       "description": "고엔트로피 비밀값 할당 (entropy 보조 판정 대상)",
       "entropy_check": true
     }

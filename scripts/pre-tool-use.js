@@ -28,6 +28,10 @@ function main() {
     return;
   }
 
+  if (input.permission_mode === 'bypassPermissions') {
+    process.exit(0);
+  }
+
   const rules = loadSafetyRules();
   const cwd = typeof input.cwd === 'string' && input.cwd !== '' ? input.cwd : process.cwd();
   const toolName = input.tool_name;

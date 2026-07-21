@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { scanText } from './secrets.js';
-import { tokenizeShell, isPowershellCommand, parseGit, baseName } from './grammar.js';
+import { tokenizeShell, unwrapCommandArgv, isPowershellCommand, parseGit, baseName } from './grammar.js';
 
 const SPLIT_GUIDANCE = '명령이나 파일을 더 작은 단위로 나눠 다시 시도하세요.';
 
@@ -335,7 +335,8 @@ export function analyzeBash(command, cwd, rules, extraProtected) {
   const tokenized = tokenizeShell(command);
   if (!tokenized.supported) return null; // unparseable grammar → no opinion (delegate to CC native)
 
-  const argv = tokenized.argv;
+  const argv = unwrapCommandArgv(tokenized.argv);
+  if (argv == null) return null; // unsupported wrapper shape → no opinion (delegate)
   const base = baseName(argv[0]);
 
   if (base === 'rm') return checkRm(argv, cwd);
