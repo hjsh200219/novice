@@ -1,7 +1,7 @@
 ---
-created: 2026-07-22T12:00:00+09:00
+created: 2026-07-22T12:30:00+09:00
 project: novice
-summary: 안전 게이트 wrapper 정규화 + bypassPermissions stand-down + 부트스트랩 min_version/upgrade_argv — 자체 리뷰 4건 수정까지 완료, 147→160 tests
+summary: 0.3.0 릴리스 완료 (npm 게시) — 안전 게이트 wrapper 정규화 + bypassPermissions + 부트스트랩 min_version/upgrade + 자체 리뷰 4건 수정, 147→160 tests
 ---
 
 ## Session Digest
@@ -18,23 +18,28 @@ summary: 안전 게이트 wrapper 정규화 + bypassPermissions stand-down + 부
   (4) P3 approve UX: 승인 판정을 apply **이전**으로 이동(PRD 상태머신 plan→approve→apply 정렬),
       미승인 approval-required 전체를 pending_approvals로 한 번에 노출, 전부 승인 전엔 아무것도 실행 안 함.
   manifest revision 1→2. 157→160 tests. 부수: audit 테스트 revision 하드코딩 제거.
-verify-docs + 160/160 통과, 각 커밋 push 완료.
+- **667e7b9** `release`: 0.3.0 bump (plugin.json+package.json 동기) + README Release Notes(한/영).
+  verify-docs + 160/160 통과, push 완료.
+- **npm publish 완료**: `claude-novice@0.3.0` 레지스트리 게시(latest, 37 files, shasum 39e846da…).
+  publish 과정에 인증 이슈 해소 — 기존 .npmrc/.env 토큰 401(죽음), OTP EOTP 거쳐, 최종적으로
+  **새 Granular Access Token(claude-novice read+write)**으로 게시 성공.
 
 ## Progress
 - 완료: 안전 게이트 wrapper 정규화 + bypassPermissions stand-down + secret unquoted 매칭 (c4bae6b)
 - 완료: 부트스트랩 installer min_version semver 검증 + approve phase (c4bae6b)
 - 완료: 자체 리뷰 4건 전부 수정 — upgrade_argv, 버전 anchor, min_version 균일 검증, approve 선행 게이트 (e3854a1)
 - 완료: 문서 동기화(테스트 수 147→160, wrapper·bypassPermissions·위협모델), manifest revision 1→2
-- 미완: 사용자 보안 후속 — npm recovery codes 재생성 + `.env` NPM_KEY bypass 토큰 revoke (carryover)
+- 완료: **0.3.0 릴리스 + npm publish** (667e7b9, claude-novice@0.3.0 게시)
+- 완료: npm recovery codes 재생성 (이전 채팅 노출분 포함 무효화)
+- 미완: **보안 후속** — 채팅에 노출된 recovery codes 5건 재생성 확인 + 죽은 .env NPM_KEY 정리(파일에서 제거),
+  publish용 Granular Access Token 안전 보관 확인 (carryover)
 - 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E (carryover)
 
 ## Next Steps
-1. **사용자 보안 후속**: npm recovery codes 재생성(채팅 노출분 무효화) + NPM_KEY revoke.
-2. **(선택) 릴리스 판단** — 이번 세션은 새 안전 동작(bypassPermissions·wrapper·min_version·upgrade)
-   추가라 semver상 minor(0.2.0→0.3.0) 후보. 릴리스하려면 plugin.json+package.json 동기 bump →
-   README Release Notes(한/영) → push → 터미널 `npm publish`(OTP). **미결정 — 사용자 결정 대기.**
-3. product beta 준비 (concierge n≥5, moderated n≥20) — PRD §완료 기준.
-4. (선택) 문서화한 설치 채널 실측 검증 — settings.json 자동 설치·`--plugin-url`은 문서 기반.
+1. **보안 정리**: (a) 이번 세션 채팅에 붙여넣은 recovery codes 5건이 재생성으로 무효화됐는지 확인,
+   (b) 죽은 `.env` NPM_KEY(401) 제거, (c) 새 Granular Access Token은 채팅·커밋 밖에 안전 보관.
+2. product beta 준비 (concierge n≥5, moderated n≥20) — PRD §완료 기준.
+3. (선택) 문서화한 설치 채널 실측 검증 — settings.json 자동 설치·`--plugin-url`은 문서 기반.
 
 ## Blockers
 - 없음
@@ -49,8 +54,10 @@ verify-docs + 160/160 통과, 각 커밋 push 완료.
 - **ask 티어 없음이 확정 설계**: 애매하면 위임이지 질문이 아님. ask 재도입 제안 금지. [[novice-safety-minimalism]]
 - `bypassPermissions`면 게이트 즉시 stand down — 파괴·MCP 포함 어떤 판정도 안 냄(사용자 전 리스크 인수).
 - 파이프 낀 파괴 명령은 novice가 안 잡음(의도된 트레이드오프, README 비보증에 명시).
-- 릴리스 = plugin.json+package.json 동기 bump → Release Notes → push → 사용자 터미널 `npm publish`(OTP). [[npm-publish-flow]]
-- `.env`는 gitignore됨 — 커밋 절대 금지 (NPM_KEY 등 시크릿).
+- 릴리스 = plugin.json+package.json 동기 bump → Release Notes → push → publish. [[npm-publish-flow]]
+  **publish 인증**: 2FA 등록됨 → 새 Granular Access Token(claude-novice read+write)이면 OTP 없이 게시.
+  OTP 경로는 `--otp=<6자리>`(대화형 프롬프트는 `!` 셸에서 안 뜸). 죽은 토큰은 401(위장 E404).
+- `.env`는 gitignore됨 — 커밋 절대 금지 (NPM_KEY 등 시크릿). 시크릿·토큰·recovery code는 채팅에도 붙이지 말 것.
 
 ## Files Touched
 - 코드: scripts/lib/grammar.js, scripts/lib/manifest.js, scripts/lib/safety.js,
