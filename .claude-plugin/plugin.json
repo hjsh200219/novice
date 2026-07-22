@@ -1,6 +1,6 @@
 {
   "name": "novice",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "비개발자 입문자를 위한 3단계 학습 동반자 — 실제 개발 용어 보존, 안전 게이트, 외부 서비스 CLI 부트스트랩",
   "author": {
     "name": "SHC"

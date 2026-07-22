@@ -1,6 +1,6 @@
 {
   "name": "claude-novice",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "바이브 코딩 입문자용 Claude Code 플러그인 — 용어 스캐폴딩·안전 게이트·서비스 CLI 부트스트랩 | A Claude Code plugin for vibe-coding beginners — term scaffolding, safety gate, service CLI bootstrap",
   "type": "module",
   "license": "MIT",
