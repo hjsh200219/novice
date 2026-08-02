@@ -24,9 +24,11 @@ summary: 0.4.0 — /novice:focus 응답 형태 규칙 다이얼 포팅(ayghri/i-
 - 완료: `/novice:focus on|off` slash + 자연어 `novice focus on|off`, `skills/focus/SKILL.md`
 - 완료: evals 코퍼스·checker·runner + `npm run evals`, contract fixture 1건(derived)
 - 완료: 문서 전량 동기화(README 한/영, PRD rev 13, AGENTS 제약 6번, ARCHITECTURE, QUALITY,
-  mode/front-door 스킬, marketplace), 0.4.0 릴리스 + npm publish
-- 미완: **보안 후속**(carryover) — 죽은 `.env` NPM_KEY(401) 제거, publish용 Granular Access
-  Token 안전 보관 확인
+  mode/front-door 스킬, marketplace)
+- 완료: **0.4.0 릴리스** — commit `fe96dfc`, push `e251fef..fe96dfc`,
+  `claude-novice@0.4.0` npm 게시(latest, 39 files, 66.8kB, shasum `bd075d1a…`)
+- 완료: **이전 세션의 잘못된 기록 정정** — `.env`의 NPM 키는 죽은 토큰이 **아니다**.
+  bypass-2FA granular 토큰(id `11e994`, 2026-07-22 생성)이고 살아 있다. 아래 Watch Out 참조
 - 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E (carryover)
 - 미완: **evals 판단 축 미실행** — 정확성·자율성·안전은 `rubric.md`로 분리돼 CI가 안 잡는다.
   focus on/off 두 조건 응답을 실제로 수집해 채점한 적 없음.
@@ -34,8 +36,8 @@ summary: 0.4.0 — /novice:focus 응답 형태 규칙 다이얼 포팅(ayghri/i-
 ## Next Steps
 1. evals 판단 축 1회 실행 — `cases.jsonl` 프롬프트를 focus on/off로 각각 받아
    `node evals/run.js <responses.json>` + `rubric.md` 수동 채점. 형태 검사만 CI에 있다.
-2. 보안 정리 — 죽은 `.env` NPM_KEY 제거, 토큰 보관 확인.
-3. product beta 준비 (concierge n≥5, moderated n≥20) — PRD §완료 기준.
+2. product beta 준비 (concierge n≥5, moderated n≥20) — PRD §완료 기준.
+3. (선택) 문서화한 설치 채널 실측 검증 — settings.json 자동 설치·`--plugin-url`은 문서 기반.
 
 ## Blockers
 - 없음
@@ -58,7 +60,17 @@ summary: 0.4.0 — /novice:focus 응답 형태 규칙 다이얼 포팅(ayghri/i-
 - **checker에 새 check 추가 시 `SAMPLES` good/bad 쌍 필수** — `focus-evals.test.js`가 강제한다.
   샘플 없는 check는 "항상 통과"로 조용히 썩는다.
 - 릴리스 = plugin.json+package.json 동기 bump → Release Notes → push → publish. [[npm-publish-flow]]
+- **`npm login`을 실행하지 말 것 (publish 인증)** — 2026-08-02에 이걸로 한 번 막혔다.
+  `~/.npmrc`의 granular 토큰을 **웹 세션 토큰으로 덮어쓰고**, 세션 토큰은 bypass-2FA가 없어
+  publish가 `E403 Two-factor authentication ... required`로 죽는다. 401을 보면 로그인부터
+  하지 말고 **`.env`의 NPM 키를 먼저 테스트**한다:
+  `npm whoami --userconfig=<임시파일>` (임시파일에 `//registry.npmjs.org/:_authToken=<키>`).
+- **`.env`의 NPM 키는 살아 있는 bypass-2FA granular 토큰이다 — 지우지 말 것.**
+  (id `11e994`, 2026-07-22 생성, `claude-novice` read+write.) 이전 HANDOFF의 "죽은 `.env`
+  NPM_KEY(401) 제거" 항목은 **오기**였다. 401을 냈던 건 `~/.npmrc`에 있던 별개의 옛 토큰이다.
+  복구법: `npm config set //registry.npmjs.org/:_authToken=$(grep -m1 NPM .env | cut -d= -f2-)`
 - `.env`는 gitignore됨 — 커밋 절대 금지. 시크릿·토큰·recovery code는 채팅에도 붙이지 말 것.
+  (토큰 동일성 확인은 값 출력 없이 접두어·접미어 `case` 매칭으로 한다.)
 
 ## Files Touched
 - 신규: config/focus-rules.json, skills/focus/SKILL.md,
