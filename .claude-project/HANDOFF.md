@@ -29,6 +29,10 @@ summary: 0.4.0 — /novice:focus 응답 형태 규칙 다이얼 포팅(ayghri/i-
   `claude-novice@0.4.0` npm 게시(latest, 39 files, 66.8kB, shasum `bd075d1a…`)
 - 완료: **이전 세션의 잘못된 기록 정정** — `.env`의 NPM 키는 죽은 토큰이 **아니다**.
   bypass-2FA granular 토큰(id `11e994`, 2026-07-22 생성)이고 살아 있다. 아래 Watch Out 참조
+- 완료: Pack 분석(5 에이전트) — 메모리 2건 신설([[novice-capsule-injection-invariants]],
+  [[novice-output-style-prohibition-guard]]), [[zero-dep-harness-approach]]에 evals 항목 추가,
+  AGENTS.md 릴리스 규칙에 publish 인증 경로 명문화, evals/README.md에 `SAMPLES` 쌍 필수 규칙 추가.
+  위생 점검 이슈 0건.
 - 미완: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E (carryover)
 - 미완: **evals 판단 축 미실행** — 정확성·자율성·안전은 `rubric.md`로 분리돼 CI가 안 잡는다.
   focus on/off 두 조건 응답을 실제로 수집해 채점한 적 없음.
@@ -58,7 +62,7 @@ summary: 0.4.0 — /novice:focus 응답 형태 규칙 다이얼 포팅(ayghri/i-
 - **evals는 두 겹** — 형태 규칙 13종만 CI(`npm test`)가 잡는다. 정확성·자율성·안전은 사람/LLM
   judge 몫(`evals/rubric.md`). "evals 통과 = 품질 검증 완료"라고 말하면 안 된다.
 - **checker에 새 check 추가 시 `SAMPLES` good/bad 쌍 필수** — `focus-evals.test.js`가 강제한다.
-  샘플 없는 check는 "항상 통과"로 조용히 썩는다.
+  샘플 없는 check는 "항상 통과"로 조용히 썩는다. (상시 기록처: `evals/README.md`)
 - 릴리스 = plugin.json+package.json 동기 bump → Release Notes → push → publish. [[npm-publish-flow]]
 - **`npm login`을 실행하지 말 것 (publish 인증)** — 2026-08-02에 이걸로 한 번 막혔다.
   `~/.npmrc`의 granular 토큰을 **웹 세션 토큰으로 덮어쓰고**, 세션 토큰은 bypass-2FA가 없어

@@ -14,6 +14,10 @@
 - 테스트: `node:test`. `npm test` = unit + integration (현재 195개). 부분: `npm run test:unit` / `test:integration`.
   `npm run evals` = focus 응답 형태 eval 코퍼스(오프라인, 모델 호출 없음) — [evals/README.md](./evals/README.md).
 - 릴리스 (이 프로젝트 규칙): 버전은 `.claude-plugin/plugin.json` + `package.json`(npm `claude-novice`) **동기 bump**. **주요 버전(minor 이상) bump를 push할 때 README `## Release Notes`(한/영)에 항목을 추가**하고 bump와 같은 커밋으로 묶은 뒤, push 후 `npm publish`(prepublishOnly가 전체 테스트 실행)한다.
+  publish는 **에이전트가 직접** 수행한다 — `.env`의 bypass-2FA granular 토큰을 임시 npmrc에 넣고
+  `npm publish --userconfig=<임시파일>` 후 임시파일 삭제(값이 채팅·로그에 안 남는 경로).
+  **`npm login` 금지** — `~/.npmrc`의 granular 토큰을 웹 세션 토큰으로 덮어써 E403이 난다.
+  상세: [.claude-project/memory/npm-publish-flow.md](./.claude-project/memory/npm-publish-flow.md).
 
 ## 아키텍처 한 줄
 config(데이터) ← lib(순수) ← hook 핸들러. 상세: [ARCHITECTURE.md](./ARCHITECTURE.md), 레이어 규칙: [docs/design-docs/layer-rules.md](./docs/design-docs/layer-rules.md).

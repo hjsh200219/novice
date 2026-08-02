@@ -12,10 +12,14 @@ novice 플러그인은 **외부 dependency 0** 원칙(package.json deps/devDeps 
 - **CI**: `.github/workflows/test.yml`이 `npm test`만 실행 (npm install 스텝 없음 — deps 0).
 - **dead code**: knip 미설치. verify-docs가 lib 레지스트리(ARCHITECTURE 모듈맵 ↔ 실제 scripts/lib/*.js) 일치 검사.
 - **문서-코드 일치**: verify-docs가 AGENTS 링크·CLAUDE.md=@AGENTS.md·plugin.json hooks-키 금지·userConfig title·terms수·manifest·harness 5종 검증.
+- **evals(응답 형태)**: upstream(ayghri/i-have-adhd)의 **Python 러너 + 실제 모델 호출**을 `node:test` + 오프라인 채점기로 다시 썼다(`evals/`, `npm run evals`). 케이스 16 + 결정적 형태 검사 13종, **네트워크 0·모델 호출 0**이라 CI에서 그냥 돈다.
+  - `tests/unit/focus-evals.test.js`가 스키마·미지 check 이름·**규칙 커버리지**(모든 규칙이 최소 1케이스에 매핑)를 강제하고, checker의 **각 check는 `SAMPLES`의 good/bad 쌍으로 자체 검증**된다 — 샘플 없는 check는 "항상 통과"로 조용히 썩으므로 머지 불가.
+  - **두 겹 구조 주의**: CI가 잡는 건 **형태 규칙뿐**이다. 정확성·자율성·안전·간결성은 `evals/rubric.md`의 가중 루브릭으로 분리한 **수동/LLM judge 몫**이고 자동화돼 있지 않다. **"evals green = 품질 검증 완료"라고 말하면 안 된다.**
 
 **미채택 (정직 표기, 부채 아님)**: husky/lint-staged(외부 의존성), 구조화 logger/withErrorHandler(API·프론트 없는 hook 플러그인이라 N/A). pre-commit 게이트 역할은 CI + pretest로 대체.
 
 안전 분석은 `scripts/lib/safety.js`에 분리하고 `scripts/pre-tool-use.js`는 thin hook(54줄)이다. safety corpus·mutation 테스트가 pre-tool-use를 자식 프로세스로 검증하므로 리팩터해도 동작 회귀를 잡는다.
 
 **Why:** zero-dep는 이 플러그인의 핵심 제약이자 신뢰 근거다. 하네스 성숙도를 올린다고 외부 도구를 넣으면 제약 자체를 깨서 본말전도. "모델이 스스로 못하는 것"만 하네스로 인코딩하고 나머지는 node 내장으로.
+외부 하네스를 포팅할 때도 같다 — 러너를 그대로 가져오는 대신 node 내장으로 다시 쓰고, 자동 판정 가능한 축만 CI에 넣고 나머지는 수동으로 분리해 정직하게 표기한다.
 **How to apply:** 품질/자동화 개선 시 외부 패키지 추가 전에 node 내장(`node:test` coverage, verify-docs 정적 검사, GitHub Actions)으로 되는지 먼저 확인. 정말 필요하면 `/sh:harness-setup --infra` 명시 옵트인. [[claude-code-plugin-platform-facts]] · [[prd-cross-review-workflow]].

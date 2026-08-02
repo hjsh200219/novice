@@ -43,6 +43,15 @@ node evals/run.js responses.baseline.json
 3. `npm test`를 돌린다 — `tests/unit/focus-evals.test.js`가 스키마·미지 check 이름·규칙
    커버리지(모든 규칙이 최소 1개 케이스에 매핑)를 강제한다.
 
+## checker에 check를 추가할 때
+
+**`SAMPLES`에 good/bad 응답 쌍을 반드시 함께 추가한다.** `focus-evals.test.js`의
+`every implemented check has a sample pair` 테스트가 이를 강제하며, 쌍이 없으면 머지되지 않는다.
+
+정규식 판정기는 **항상 통과시키는 방향으로 조용히 썩는다** — 통과만 시키는 check는 아무도
+눈치채지 못한 채 커버리지 착시를 만든다. good/bad 쌍은 그 부패를 테스트로 잡는 장치다.
+`bad` 샘플은 반드시 실패해야 하고 실패 사유(`detail`)가 비어 있어도 안 된다.
+
 ## 출처
 
 케이스·루브릭 원형은 [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT).
