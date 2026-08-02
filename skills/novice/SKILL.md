@@ -15,13 +15,14 @@ disable-model-invocation: true
    (`CLAUDE_PLUGIN_DATA`는 런타임이 주입하므로 인자로 넘기지 않는다):
 
    ```
-   node -e "import(process.env.CLAUDE_PLUGIN_ROOT + '/scripts/lib/state.js').then(m=>{const c=m.getProjectConfig(process.cwd());console.log(JSON.stringify({level:c.level,enabled:c.enabled,muted:c.muted_terms}))})"
+   node -e "import(process.env.CLAUDE_PLUGIN_ROOT + '/scripts/lib/state.js').then(m=>{const c=m.getProjectConfig(process.cwd());console.log(JSON.stringify({level:c.level,enabled:c.enabled,focus:c.focus_enabled,muted:c.muted_terms}))})"
    ```
 
    | 항목 | 값 |
    |---|---|
    | novice 레벨 | `level` (enabled=false면 "off"로 표시) |
    | 학습층 | enabled=true → 켜짐 / false → 꺼짐 |
+   | focus (응답 형태) | `focus` → 켜짐 / 꺼짐. level과 별개 다이얼이라 novice off에서도 유지된다 |
    | 안전 게이트 | 최소 deny-only 코어 — 파괴 비가역 명령·노출된 시크릿만 차단. 플러그인 활성 동안 유지 |
    | mute된 용어 | `muted` 목록 (없으면 "없음") |
 
@@ -30,6 +31,7 @@ disable-model-invocation: true
    | 명령 | 용도 |
    |---|---|
    | `/novice:mode 1\|2\|3\|off` | 레벨 확인·전환 (상세: mode 스킬) |
+   | `/novice:focus on\|off` | 응답 형태 규칙 확인·전환 (상세: focus 스킬) |
    | `/novice:setup-service` | 외부 서비스 CLI 부트스트랩 (탐지·설치·로그인·인증) |
    | `novice mute/unmute/reset <용어>` | 용어 설명 제어 (자연어 별칭) |
 

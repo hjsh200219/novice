@@ -86,6 +86,31 @@ claude --plugin-url <플러그인 ZIP URL>   # 호스팅된 ZIP 원샷 테스트
 | `/novice:mode 2` | Level 2 — 3회까지 설명, 핵심 결정만 해설 |
 | `/novice:mode 3` | Level 3 — 요청 시만 설명, 아키텍처·유저플로우 중심 |
 | `/novice:mode off` | novice 톤·설명·시각화 완전 제거 (안전 게이트는 유지) |
+| `/novice:focus` | 현재 focus(응답 형태 규칙) 상태 표시 |
+| `/novice:focus on` | 응답 형태 규칙 켜기 — 행동 우선·번호 목록·서론/맺음말 금지 |
+| `/novice:focus off` | focus 끄기 (level 지시·안전 게이트는 그대로) |
+
+### focus — 응답 형태 규칙
+
+답이 길고 어디서부터 해야 할지 모르겠을 때 켭니다. 규칙 10개를 강제합니다.
+
+1. 첫 줄은 바로 실행할 수 있는 행동·명령·경로 — 배경은 그 뒤
+2. 2단계 이상이면 번호 목록, 한 항목은 한 동작
+3. 남은 일이 있으면 끝에 2분 안에 할 수 있는 다음 행동 하나
+4. 곁가지는 억제 — 두 번째 이슈는 첫 이슈를 끝낸 뒤 따로
+5. 매 턴 현재 상태를 다시 적음 ("5단계 중 3단계 완료")
+
+나머지 5개(구체적 시간 추정, 완료 결과 가시화, 담담한 에러 서술, 목록 5개 상한,
+서론·요약·맺음말 금지)와 규칙을 깨는 6가지 예외는 [skills/focus/SKILL.md](./skills/focus/SKILL.md)에 있습니다.
+
+**focus는 novice level과 별개 다이얼입니다.** `novice off` 상태에서도 focus는 동작하고,
+focus를 꺼도 level 지시는 유지됩니다. 충돌하면 focus가 이기지만, **용어 괄호 병기는 유지**됩니다
+— `commit(…)`은 서론이 아니라 인라인이기 때문입니다.
+
+플러그인 설정 `focus_default`를 `true`로 두면 모든 프로젝트에서 기본 on입니다
+(프로젝트별 `/novice:focus off`가 우선).
+
+규칙 체계 출처: [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT).
 
 ### 자연어 명령
 
@@ -99,6 +124,7 @@ claude --plugin-url <플러그인 ZIP URL>   # 호스팅된 ZIP 원샷 테스트
 | `novice reset <용어>` | 특정 용어만 카운터 초기화 | `novice reset commit` |
 | `novice mute <용어>` | 특정 용어를 **영구 제외** — 노출 횟수와 무관하게 설명 중단 | `novice mute commit` |
 | `novice unmute <용어>` | mute 해제 — 다시 fade 규칙에 따라 설명 | `novice unmute commit` |
+| `novice focus on` / `novice focus off` | focus 전환 (`/novice:focus on|off`와 동일) | `novice focus on` |
 
 - **reset vs mute**: `reset`은 카운터를 0으로 되돌려 **다시** N회 설명하게 하고, `mute`는 지금 즉시 설명을 끊고 계속 끊어 둡니다.
 - **mute는 프로젝트 단위**로 저장되어 세션이 바뀌어도 유지됩니다. reset·용어 카운터는 세션 스코프입니다.
@@ -178,6 +204,20 @@ mode로만 씁니다. 라우터는 경로 결정·검증·다운그레이드까�
 - 원격 telemetry를 보내지 않습니다.
 
 ## Release Notes
+
+### 0.4.0 (2026-08-02)
+- **`/novice:focus` 추가 — 응답 형태 규칙 다이얼.** 행동 우선·번호 목록·곁가지 억제·상태
+  재진술·구체적 시간 추정·서론/맺음말 금지 등 규칙 10개를 capsule로 주입한다. 규칙 체계는
+  [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT)에서 가져와 한국어로 옮겼다.
+- **focus는 level과 별개 다이얼** — `novice off` 상태에서도 동작하고, 프로젝트 단위로 저장된다.
+  충돌 시 focus가 이기되 **용어 괄호 병기는 유지**된다(인라인이지 서론이 아님).
+- 전환: `/novice:focus on|off`, 자연어 `novice focus on|off`, 플러그인 설정 `focus_default`.
+- capsule revision은 **규칙 id**로만 계산 — 문구를 고쳐도 재주입이 없고, 규칙을 추가·삭제할 때만
+  한 번 재주입된다. 상한 초과 시 산문 부속을 먼저 버리고 규칙은 절대 자르지 않는다.
+- **focus eval 하네스 추가**(`evals/`) — 케이스 16개 + 결정적 형태 검사 13종 + 가중 루브릭.
+  upstream의 Python 러너 대신 `node:test`로 다시 써서 외부 dependency 0·네트워크 0을 유지한다.
+  `npm run evals`로 목록·커버리지 확인, `node evals/run.js <responses.json>`으로 채점.
+- 테스트 160 → 195.
 
 ### 0.3.0 (2026-07-22)
 - **`bypassPermissions` 예외** — 사용자가 전 리스크를 인수한 이 permission mode에서는 안전 게이트가
@@ -322,6 +362,32 @@ claude --plugin-url <plugin ZIP URL>    # one-shot test of a hosted ZIP (CI arti
 | `/novice:mode 2` | Level 2 — explain up to 3 times, narrate key decisions only |
 | `/novice:mode 3` | Level 3 — explain on request only, architecture/user-flow focused |
 | `/novice:mode off` | Fully remove novice tone/explanations/visualization (safety gate stays on) |
+| `/novice:focus` | Show the current focus (response-shape rules) state |
+| `/novice:focus on` | Turn on the response-shape rules — action first, numbered steps, no preamble or closers |
+| `/novice:focus off` | Turn focus off (level rules and the safety gate are untouched) |
+
+### focus — response-shape rules
+
+Turn this on when answers run long and it is unclear where to start. It enforces 10 rules:
+
+1. The first line is an action, command, or path you can run — context comes after
+2. More than one step means a numbered list, one action per item
+3. If anything is left open, end with one next action doable in under two minutes
+4. Tangents are suppressed — a second issue is raised only after the first is finished
+5. State is restated every turn ("step 3 of 5 done")
+
+The other five (concrete time estimates, visible wins, matter-of-fact errors, lists capped at
+five, no preamble/recap/closers) and the six documented exceptions live in
+[skills/focus/SKILL.md](./skills/focus/SKILL.md).
+
+**focus is a separate dial from the novice level.** It keeps working while `novice off` is
+set, and turning it off leaves the level rules in place. On conflict focus wins — except that
+**term glossing stays**, because `commit(…)` is inline, not preamble.
+
+Set the plugin config `focus_default` to `true` to make it on by default everywhere
+(a per-project `/novice:focus off` still wins).
+
+Rule set adapted from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT).
 
 ### Natural-language commands
 
@@ -336,6 +402,7 @@ the current answer and does not change any setting.
 | `novice reset <term>` | Reset one term's counter | `novice reset commit` |
 | `novice mute <term>` | **Permanently exclude** a term — explanation stops regardless of count | `novice mute commit` |
 | `novice unmute <term>` | Undo a mute — explanation resumes per the fade rule | `novice unmute commit` |
+| `novice focus on` / `novice focus off` | Toggle focus (same as `/novice:focus on|off`) | `novice focus on` |
 
 - **reset vs mute**: `reset` restarts the counter from zero so the term is explained N more
   times; `mute` stops the explanation right now and keeps it off.
@@ -426,6 +493,25 @@ native permission prompt**.
 - No remote telemetry is sent.
 
 ## Release Notes
+
+### 0.4.0 (2026-08-02)
+- **Added `/novice:focus` — a response-shape dial.** Injects 10 rules as a capsule: action
+  first, numbered steps, tangents suppressed, state restated every turn, concrete time
+  estimates, no preamble or closers. Rule set adapted from
+  [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT).
+- **focus is a dial separate from the level** — it keeps working under `novice off` and is
+  stored per project. On conflict focus wins, except that **term glossing stays** (inline, not
+  preamble).
+- Toggle with `/novice:focus on|off`, the natural-language `novice focus on|off`, or the
+  plugin config `focus_default`.
+- The capsule revision hashes **rule ids only** — rewording a rule causes no re-injection;
+  adding or removing one re-injects exactly once. Over the size cap the prose qualifiers are
+  dropped first and a rule is never truncated.
+- **Added a focus eval harness** (`evals/`) — 16 cases, 13 deterministic shape checks, and a
+  weighted rubric. Rewritten on `node:test` instead of the upstream Python runner to keep zero
+  external dependencies and zero network. `npm run evals` lists cases and rule coverage;
+  `node evals/run.js <responses.json>` grades responses.
+- Tests 160 → 195.
 
 ### 0.3.0 (2026-07-22)
 - **`bypassPermissions` exception** — in this mode the user assumes full risk and the safety gate

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "capsule_max_chars": 1000,
+  "tombstone_max_chars": 300,
+  "precedence": "novice level 지시와 충돌하면 이 규칙이 이긴다. 단 NOVICE_STATE의 용어 괄호 병기는 서론이 아니므로 그대로 유지한다.",
+  "exceptions": "예외(과업이 규칙을 이긴다): 설명·안내 요청, 파괴적 작업 확인, 3턴 연속 실패, 진짜 모호함, 규칙이 답 자체를 지울 때.",
+  "rules": [
+    { "id": "action-first", "ko": "첫 줄은 바로 실행할 수 있는 행동·명령·경로다. 배경은 그 뒤." },
+    { "id": "numbered-steps", "ko": "2단계 이상이면 번호 목록. 한 항목은 한 동작." },
+    { "id": "one-next-action", "ko": "남은 일이 있으면 끝에 2분 안에 할 수 있는 next action 하나." },
+    { "id": "suppress-tangents", "ko": "곁가지는 억제. 두 번째 이슈는 첫 이슈를 끝낸 뒤 따로 묻는다." },
+    { "id": "restate-state", "ko": "매 턴 현재 상태를 다시 적는다(\"5단계 중 3단계 완료\")." },
+    { "id": "concrete-estimates", "ko": "시간 추정은 구체 단위로(\"15분\", \"반나절\")." },
+    { "id": "visible-wins", "ko": "끝난 일은 이제 무엇이 되는지로 보여 준다." },
+    { "id": "flat-errors", "ko": "에러는 담담하게 원인·수정만. \"이런\"·\"문제가 있는 것 같습니다\" 금지." },
+    { "id": "cap-lists", "ko": "목록은 5개 상한. 넘으면 지금 할 것·나중 할 것으로 나눈다." },
+    { "id": "no-preamble", "ko": "서론·사후 요약·맺음말 금지. 답부터 시작하고 답이 끝나면 멈춘다." }
+  ],
+  "attribution": {
+    "upstream": "ayghri/i-have-adhd",
+    "url": "https://github.com/ayghri/i-have-adhd",
+    "license": "MIT",
+    "note": "규칙 체계는 upstream에서 가져왔고, capsule 압축·revision·프로젝트 스코프 저장은 novice 구현이다."
+  }
+}

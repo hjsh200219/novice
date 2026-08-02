@@ -82,6 +82,21 @@ test('UserPromptExpansion contract: valid updates state, invalid blocks, query r
   assert.ok(additionalContextOf(query).includes('현재 mode'));
 });
 
+test('UserPromptExpansion contract: /novice:focus uses the same payload shape as /novice:mode', async () => {
+  const dataDir = makeDataDir();
+  const cwd = freshCwd();
+
+  const on = await runHook('user-prompt-expansion.js', fixture('user-prompt-expansion-focus', { cwd }), { dataDir });
+  assert.equal(on.output.hookSpecificOutput.hookEventName, 'UserPromptExpansion');
+  assert.ok(additionalContextOf(on).includes('[NOVICE_FOCUS]'));
+
+  // The focus dial is independent: the level capsule keeps flowing on ordinary prompts.
+  const plain = await runHook('user-prompt-submit.js', fixture('user-prompt-submit', { cwd }), { dataDir });
+  const ctx = additionalContextOf(plain);
+  assert.ok(ctx.includes('[NOVICE_STATE]'));
+  assert.ok(ctx.includes('[NOVICE_FOCUS]'));
+});
+
 test('PreToolUse contract: benign bash passes, dangerous bash denied, mcp destructive denied', async () => {
   const dataDir = makeDataDir();
   const cwd = freshCwd();

@@ -6,7 +6,7 @@
 // Learning hook: fail open (exit 0, no output) on any internal error.
 import { readStdinJson, emitAdditionalContext, failOpen } from './lib/hookio.js';
 import { getProjectConfig, loadSession, saveSession } from './lib/state.js';
-import { loadTerms, buildGlossary, glossaryRevision, buildTombstone, capsuleForState } from './lib/capsule.js';
+import { loadTerms, buildGlossary, glossaryRevision, buildTombstone, capsuleForState, focusSegment, applyFocusSegment } from './lib/capsule.js';
 
 function main() {
   const input = readStdinJson();
@@ -16,28 +16,32 @@ function main() {
 
   const config = getProjectConfig(cwd);
   const session = loadSession(sessionId);
+  const parts = [];
 
   if (config.enabled) {
     const { revision, capsule } = capsuleForState(config.level, session, config.muted_terms);
     const terms = loadTerms();
-    const glossary = buildGlossary(terms);
-    emitAdditionalContext('SessionStart', `${capsule}\n\n${glossary}`);
+    parts.push(capsule, buildGlossary(terms));
     session.capsule_revision = revision;
     session.glossary_revision = glossaryRevision(terms);
-    session.skip_next_submit = true;
     session.off_tombstone_emitted = false;
-    saveSession(sessionId, session);
-    return;
-  }
-
-  // Disabled: only speak once, and only if a capsule was previously injected this session.
-  if (session.capsule_revision != null && session.off_tombstone_emitted !== true) {
-    emitAdditionalContext('SessionStart', buildTombstone());
+  } else if (session.capsule_revision != null && session.off_tombstone_emitted !== true) {
+    // Disabled: only speak once, and only if a capsule was previously injected this session.
+    parts.push(buildTombstone());
     session.off_tombstone_emitted = true;
     session.capsule_revision = null;
-    session.skip_next_submit = false;
-    saveSession(sessionId, session);
   }
+
+  // focus is an independent dial: it neither implies nor is implied by config.enabled.
+  const focusText = applyFocusSegment(session, focusSegment(config.focus_enabled, session));
+  if (focusText) parts.push(focusText);
+
+  if (parts.length === 0) return;
+  emitAdditionalContext('SessionStart', parts.join('\n\n'));
+  // Prime the handshake so the immediately following UserPromptSubmit does not repeat
+  // the identical payload.
+  session.skip_next_submit = true;
+  saveSession(sessionId, session);
 }
 
 try {

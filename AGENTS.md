@@ -1,7 +1,7 @@
 # novice — 에이전트 진입 맵
 
 비개발자 입문자용 Claude Code 학습 동반자 플러그인. 실제 개발 용어 보존 + 안전 게이트 +
-외부 서비스 CLI 부트스트랩. 제품 스펙 SSOT는 [docs/PRD.md](./docs/PRD.md) (revision 12).
+외부 서비스 CLI 부트스트랩. 제품 스펙 SSOT는 [docs/PRD.md](./docs/PRD.md) (revision 13).
 
 > 이 문서는 handbook이 아니라 **map**이다. 상세는 각 링크의 하위 문서에 있다.
 
@@ -11,7 +11,8 @@
 
 ## 기술 스택 (불변)
 - Node.js ESM (`"type":"module"`), Node >= 18, **외부 dependency 0** — npm 패키지 추가 금지.
-- 테스트: `node:test`. `npm test` = unit + integration (현재 160개). 부분: `npm run test:unit` / `test:integration`.
+- 테스트: `node:test`. `npm test` = unit + integration (현재 195개). 부분: `npm run test:unit` / `test:integration`.
+  `npm run evals` = focus 응답 형태 eval 코퍼스(오프라인, 모델 호출 없음) — [evals/README.md](./evals/README.md).
 - 릴리스 (이 프로젝트 규칙): 버전은 `.claude-plugin/plugin.json` + `package.json`(npm `claude-novice`) **동기 bump**. **주요 버전(minor 이상) bump를 push할 때 README `## Release Notes`(한/영)에 항목을 추가**하고 bump와 같은 커밋으로 묶은 뒤, push 후 `npm publish`(prepublishOnly가 전체 테스트 실행)한다.
 
 ## 아키텍처 한 줄
@@ -23,6 +24,9 @@ config(데이터) ← lib(순수) ← hook 핸들러. 상세: [ARCHITECTURE.md](
 3. **credential 값 미취급** — 요청·저장·전달·자동입력 금지. audit엔 service id·revision·step·exit status만.
 4. **state는 `CLAUDE_PLUGIN_DATA`에만** — `scripts/lib/state.js` 경유. 리포 트리에 상태 파일 금지.
 5. **안전 게이트는 `novice_enabled`와 무관** — 플러그인 활성 시 항상 동작.
+6. **focus는 level과 별개 다이얼** — `novice off`에서도 살아 있는 게 의도된 설계다. 두 capsule은
+   `NOVICE_STATE`/`NOVICE_FOCUS`로 네임스페이스가 갈리고 각자 tombstone을 갖는다. 충돌 시 focus가
+   이기되 **용어 괄호 병기는 유지**(인라인이지 서론이 아님). off를 focus에 전파하자는 제안 금지.
 
 ## LLM 코딩 행동 원칙
 
@@ -48,5 +52,6 @@ Layer note: These four principles are the behavioral/judgment layer. They comple
 | 기술 부채 | [docs/exec-plans/tech-debt-tracker.md](./docs/exec-plans/tech-debt-tracker.md) |
 | 운영 원칙 | [docs/design-docs/core-beliefs.md](./docs/design-docs/core-beliefs.md) |
 | 위협 모델·비보증 | [README.md](./README.md) 안전 게이트 절, [docs/PRD.md](./docs/PRD.md) §4.5 |
-| 사용자 명령 | `/novice`(front door), `/novice:mode 1\|2\|3\|off`, `novice mute/unmute/reset <용어>` — [skills/novice/SKILL.md](./skills/novice/SKILL.md), [skills/mode/SKILL.md](./skills/mode/SKILL.md) |
+| 사용자 명령 | `/novice`(front door), `/novice:mode 1\|2\|3\|off`, `/novice:focus on\|off`, `novice mute/unmute/reset <용어>` — [skills/novice/SKILL.md](./skills/novice/SKILL.md), [skills/mode/SKILL.md](./skills/mode/SKILL.md), [skills/focus/SKILL.md](./skills/focus/SKILL.md) |
+| focus eval 하네스 | [evals/README.md](./evals/README.md) |
 | 외부 서비스 부트스트랩 | [skills/setup-service/SKILL.md](./skills/setup-service/SKILL.md) |

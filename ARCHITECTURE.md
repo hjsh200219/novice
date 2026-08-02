@@ -32,7 +32,7 @@ tests/ (검증)
 | `hookio.js` | stdin/stdout 계약, emit 헬퍼, fail-open/fail-closed |
 | `secrets.js` | 시크릿 스캔·redaction (원문 미저장), 안전 규칙 로드 |
 | `grammar.js` | Bash·PowerShell 유한 grammar 토크나이저 + git subgrammar |
-| `capsule.js` | mode capsule·glossary·tombstone·fade 계산 |
+| `capsule.js` | mode capsule·glossary·tombstone·fade 계산, focus capsule·tombstone·세그먼트 판정 |
 | `manifest.js` | bootstrap manifest 검증·로드 (Tier 1/2) |
 | `capability-router.js` | CLI→MCP→Chrome→guided manual 경로 결정·검증·다운그레이드 |
 | `fingerprint.js` | tool 호출 fingerprint (post-tool event 중복 제거) |

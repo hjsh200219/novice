@@ -27,6 +27,10 @@ export function loadLevels(env = process.env) {
   return readConfig('levels.json', env);
 }
 
+export function loadFocusRules(env = process.env) {
+  return readConfig('focus-rules.json', env);
+}
+
 // ---- level-rule vocabulary (levels.json codes → Korean summary) ----
 
 const TERM_RULE = {
@@ -76,6 +80,16 @@ export function capsuleRevision(level, fadedTerms, schemaVersion) {
     v,
     level: String(level),
     faded: [...(fadedTerms || [])].sort(),
+  });
+  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 8);
+}
+
+// Rule ids only: editing a rule's wording keeps the revision stable (no re-injection
+// churn), while adding or removing a rule changes it and re-injects once.
+export function focusRevision(focusJson) {
+  const payload = JSON.stringify({
+    v: focusJson.schema_version,
+    rules: focusJson.rules.map((r) => r.id),
   });
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 8);
 }
@@ -158,6 +172,58 @@ export function buildTombstone(env = process.env) {
     'novice가 꺼졌다. 이전 turn의 모든 NOVICE_STATE 지시와 NOVICE_GLOSSARY 용어 사전 지시를 무시한다. ' +
     '지금부터 novice 톤·용어 병기·시각화 지시를 적용하지 않는다. (플러그인 안전 게이트는 그대로 유지된다.)';
   return text.length > max ? text.slice(0, max) : text;
+}
+
+// ---- focus capsule (response-shape rules, independent dial from level) ----
+
+const FOCUS_SUPERSESSION =
+  '이 NOVICE_FOCUS capsule은 이전 turn의 모든 NOVICE_FOCUS 지시를 대체한다.';
+
+// Directive summary, not the essay: the full rationale lives in skills/focus/SKILL.md.
+// Keeping the per-turn payload small is why this is a capsule and not the skill body.
+export function buildFocusCapsule(revision, env = process.env) {
+  const focus = loadFocusRules(env);
+  const max = focus.capsule_max_chars ?? 1000;
+  const header = `[NOVICE_FOCUS] schema_version:${focus.schema_version} rev:${revision}`;
+  const rules = focus.rules.map((r, i) => `${i + 1}. ${r.ko}`);
+  const core = [header, '응답 형태 규칙:', ...rules];
+
+  let out = [...core, focus.exceptions, focus.precedence, FOCUS_SUPERSESSION].join('\n');
+  if (out.length > max) {
+    // Bounded payload: drop the prose qualifiers, never the numbered rules.
+    out = [...core, FOCUS_SUPERSESSION].join('\n');
+  }
+  return out.length > max ? out.slice(0, max) : out;
+}
+
+export function buildFocusTombstone(env = process.env) {
+  const max = loadFocusRules(env).tombstone_max_chars ?? 300;
+  const text =
+    'NOVICE_FOCUS: OFF\n' +
+    'focus가 꺼졌다. 이전 turn의 모든 NOVICE_FOCUS 응답 형태 지시를 무시한다. ' +
+    '(novice level 지시와 안전 게이트는 그대로 유지된다.)';
+  return text.length > max ? text.slice(0, max) : text;
+}
+
+// Read-only decision for one turn: what focus text to emit and what the session should
+// remember afterwards. The caller owns persistence — this never writes session state.
+export function focusSegment(focusEnabled, session, env = process.env) {
+  if (focusEnabled) {
+    const revision = focusRevision(loadFocusRules(env));
+    return { text: buildFocusCapsule(revision, env), focus_revision: revision, focus_tombstone_emitted: false };
+  }
+  // Only speak once, and only if a focus capsule was previously injected this session.
+  if (session.focus_revision != null && session.focus_tombstone_emitted !== true) {
+    return { text: buildFocusTombstone(env), focus_revision: null, focus_tombstone_emitted: true };
+  }
+  return { text: null, focus_revision: session.focus_revision ?? null, focus_tombstone_emitted: session.focus_tombstone_emitted === true };
+}
+
+// Apply a focusSegment result to a session object and return the emittable text (or null).
+export function applyFocusSegment(session, segment) {
+  session.focus_revision = segment.focus_revision;
+  session.focus_tombstone_emitted = segment.focus_tombstone_emitted;
+  return segment.text;
 }
 
 // ---- orchestration convenience (shared by the hook scripts) ----

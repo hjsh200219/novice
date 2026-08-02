@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 export const STATE_FILE_MAX_BYTES = 256 * 1024;
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export const BUILTIN_DEFAULTS = Object.freeze({ level: 1, enabled: true });
+export const BUILTIN_DEFAULTS = Object.freeze({ level: 1, enabled: true, focus_enabled: false });
 
 export function dataDir(env = process.env) {
   const fromEnv = env.CLAUDE_PLUGIN_DATA;
@@ -125,6 +125,7 @@ function userConfigDefaults(env = process.env) {
       if ([1, 2, 3].includes(lvl)) out.level = lvl;
     }
     if (typeof parsed.novice_enabled === 'boolean') out.enabled = parsed.novice_enabled;
+    if (typeof parsed.focus_default === 'boolean') out.focus_enabled = parsed.focus_default;
     return out;
   } catch {
     return {};
@@ -141,6 +142,8 @@ export function getProjectConfig(cwd = process.cwd(), env = process.env) {
     key,
     level: merged.level,
     enabled: merged.enabled,
+    // Separate dial: focus is not implied by `enabled` and survives `novice off`.
+    focus_enabled: merged.focus_enabled === true,
     protected_branches_extra: merged.protected_branches_extra ?? [],
     muted_terms: merged.muted_terms ?? [],
   };
@@ -151,6 +154,7 @@ function sanitizeOverride(override) {
   if (override && typeof override === 'object') {
     if ([1, 2, 3].includes(Number(override.level))) out.level = Number(override.level);
     if (typeof override.enabled === 'boolean') out.enabled = override.enabled;
+    if (typeof override.focus_enabled === 'boolean') out.focus_enabled = override.focus_enabled;
     if (Array.isArray(override.protected_branches_extra)) {
       out.protected_branches_extra = override.protected_branches_extra.filter((b) => typeof b === 'string');
     }
@@ -174,6 +178,17 @@ export function setProjectMode(cwd, mode, env = process.env) {
     next = { ...current, enabled: true, level: lvl };
   }
   next.updated_at = new Date().toISOString();
+  writeJsonAtomic(file, next);
+  return next;
+}
+
+// Focus is written the same way as mode: project-scoped, independent of `enabled`.
+export function setProjectFocus(cwd, on, env = process.env) {
+  if (typeof on !== 'boolean') throw new Error(`invalid focus: ${on}`);
+  const key = projectKey(cwd);
+  const file = projectOverridePath(key, env);
+  const current = sanitizeOverride(readJsonSafe(file, {}));
+  const next = { ...current, focus_enabled: on, updated_at: new Date().toISOString() };
   writeJsonAtomic(file, next);
   return next;
 }
@@ -210,6 +225,8 @@ export function defaultSessionState() {
     glossary_revision: null,
     skip_next_submit: false,
     off_tombstone_emitted: false,
+    focus_revision: null,
+    focus_tombstone_emitted: false,
     updated_at: null,
   };
 }

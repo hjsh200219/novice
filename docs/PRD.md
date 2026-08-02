@@ -2,9 +2,9 @@
 status: implemented (MVP) — product beta 미검증
 title: 비개발자 입문자용 Claude Code Novice 플러그인 PRD
 date: 2026-07-21
-revision: 12
-mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20); rev 12 — 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 전면 제거 → benign 미지원문법 false-prompt 해소, 파싱 불가·모호는 CC 네이티브 위임), /novice front door 스킬 추가 (사용자 결정 2026-07-21)
-implementation: 완료 기준 A~D 충족, 테스트 160/160 통과 (외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
+revision: 13
+mode: runtime 바이너리 검증 통과 + 2-tier 부트스트랩 절충 (manifest 자동 / 확인 후 진행, 개수 제한 없음); rev 9 — plaintext 로그인 중단 정책을 provider별 manifest 정책으로 명확화; rev 10 — 구현 반영: Level 2 fade 1→3, novice mute(교차 세션·프로젝트 스코프), MCP·Chrome capability 라우터, latency 벤치·hook 순서 실측; rev 11 — MCP 허용에 런타임 등록+명시 동의 경로 추가, CLI Tier 2 명시 동의 경로 명문화, marketplace 등록 (사용자 결정 2026-07-20); rev 12 — 안전 게이트를 deny-only 최소 코어로 축소(ask 티어 전면 제거 → benign 미지원문법 false-prompt 해소, 파싱 불가·모호는 CC 네이티브 위임), /novice front door 스킬 추가 (사용자 결정 2026-07-21); rev 13 — /novice:focus 응답 형태 규칙 다이얼 추가(§4.4b), level과 독립·프로젝트 스코프, 충돌 시 focus 우선하되 용어 병기 유지, evals 코퍼스 도입 (사용자 결정 2026-08-02)
+implementation: 완료 기준 A~D 충족, 테스트 195/195 통과 (외부 dependency 0). MCP·Chrome capability 라우터, mutation 하네스, latency 벤치(p95 회귀 테스트), hook 실행 순서 실측 캡처 포함. 실측 Claude Code 2.1.215 hook payload 캡처 + --plugin-dir live E2E 검증. 잔여: product beta(사람 참가자), 실제 CLI 설치·로그인 E2E(사용자 환경/계정), MCP destructive·SessionStart clear/compact payload 실측(headless 트리거 불가)
 owner: planner
 reviewers: [architect, critic]
 ---
@@ -265,6 +265,32 @@ provider별 executable adapter는 두지 않는다. 공통 engine이 version 관
 - 경로가 중요한 경우 현재 project root와 변경 대상 파일을 보여 준다. 파일이 없는 개념 설명에는 “지금 어디에 무슨 파일”을 억지로 출력하지 않는다.
 - 수정 요청 후에는 “무엇이 왜 바뀌었나”를 한 줄로 설명한다.
 
+### 4.4b 응답 형태 규칙 — focus [P1]
+
+`/novice:focus`는 답의 **형태**를 강제하는 별개 다이얼이다. level이 "무엇을 설명하는가"를
+정한다면, focus는 "어떤 모양으로 답하는가"를 정한다.
+
+- **규칙 SSOT는 `config/focus-rules.json`** — 규칙 10개(행동 우선, 번호 목록, 하나의 next
+  action, 곁가지 억제, 상태 재진술, 구체적 시간 추정, 완료 결과 가시화, 담담한 에러 서술,
+  목록 5개 상한, 서론·요약·맺음말 금지) + 예외 문장 + 우선순위 문장.
+- **capsule revision은 규칙 id 집합으로만 계산한다.** 문구 수정은 revision을 바꾸지 않아
+  재주입 churn이 없고, 규칙을 추가·삭제할 때만 한 번 재주입된다.
+- **상한 초과 시 산문 부속(예외·우선순위)을 먼저 버리고 규칙 목록은 절대 자르지 않는다.**
+- **level과 독립**: `novice off` 상태에서도 focus는 동작한다. `NOVICE_STATE`/`NOVICE_FOCUS`로
+  네임스페이스가 갈리고 각자 tombstone과 supersession 문장을 갖는다.
+- **충돌 시 focus 우선. 단 용어 괄호 병기는 유지한다** — `commit(…)`은 서론이 아니라
+  인라인이므로 "서론 금지" 규칙과 실제로 충돌하지 않는다. 용어 보존은 이 제품의 존재 이유다.
+- 저장 범위는 mode와 동일하게 프로젝트 단위(`CLAUDE_PLUGIN_DATA`의 project override).
+  전역 기본값은 plugin userConfig `focus_default`이며 프로젝트 override가 이긴다.
+- 전환 경로: `/novice:focus on|off`(UserPromptExpansion이 결정적으로 처리), 자연어 별칭
+  `novice focus on|off`(프롬프트 전체 일치 시에만).
+- 규칙 체계 출처는 [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT).
+  upstream은 SKILL.md 전문(6.8KB)을 SessionStart에 통째로 주입하지만, novice는 기존 capsule
+  규약(압축·revision·supersession)에 맞춰 요약 capsule로 주입하고 전문은 스킬 문서에 둔다.
+- 검증은 `evals/` 코퍼스(케이스 16개 + 결정적 형태 검사 13종 + 가중 루브릭). 형태 규칙은
+  정규식으로 판정 가능하므로 CI에서 돌고, 정확성·자율성·안전은 `evals/rubric.md`로 분리해
+  릴리스 전 수동 판정한다.
+
 ### 4.5 안전 게이트와 위협 모델 [P0]
 
 #### 보호 범위
@@ -338,11 +364,14 @@ novice/
   skills/
     mode/
       SKILL.md                # /novice:mode 1|2|3|off 안내와 결과 메시지
+    focus/
+      SKILL.md                # /novice:focus on|off 응답 형태 규칙 안내
     setup-service/
       SKILL.md                # manifest-driven bootstrap state machine
   config/
     levels.json               # level별 기계 규칙 SSOT
     terms.json                # 용어 사전 SSOT
+    focus-rules.json          # 응답 형태 규칙 SSOT (focus capsule 입력)
     safety-rules.json         # 위험 패턴·정책 SSOT
     service-capabilities.json # 작업별 CLI/MCP/Chrome capability
     bootstrap-manifests/
@@ -394,7 +423,7 @@ novice/
 
 > 구현은 단계를 나누지 않고 **전체 기능을 한 번에 개발**한다(사용자 결정, revision 5). 아래 완료 기준은 순차 gate가 아니라 배포 판정용 단일 체크리스트이며 영역별로 묶었을 뿐이다. 단, 플랫폼 contract fixture 캡처(A)는 나머지 구현의 전제이므로 착수 직후 가장 먼저 수행한다.
 
-> **구현 상태 (2026-07-22, rev 12):** 완료 기준 A~D 전 항목 구현·통과. 테스트 160/160 (외부 dependency 0), mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
+> **구현 상태 (2026-08-02, rev 13):** 완료 기준 A~D 전 항목 구현·통과. 테스트 195/195 (외부 dependency 0), mutation 하네스 우회 0, latency 벤치 p95 예산 충족(회귀 테스트), MCP·Chrome capability 라우터, hook 실행 순서 실측 캡처(`hook-order-slash.json`: expansion→submit, contract 순서 독립). contract fixture는 실측 2.1.215 캡처로 확보하고 `--plugin-dir` live E2E까지 확인. 잔여: (1) product beta 검증(사람 참가자), (2) 실제 CLI 설치·로그인 E2E(사용자 환경·계정 필요), (3) MCP destructive·SessionStart `clear`/`compact` payload는 headless 트리거 불가라 documented/derived 상태로 남김(fixture `provenance` 필드로 구분).
 
 **산출물 (일괄)**
 
