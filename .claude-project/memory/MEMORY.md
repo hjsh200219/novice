@@ -8,7 +8,7 @@
 - [zero-dep-harness-approach](zero-dep-harness-approach.md) — zero-dep 프로젝트 하네스: eslint/knip/husky 대신 verify-docs + node 내장 coverage/CI
 - [safety-fixture-scan-self-block-gap](safety-fixture-scan-self-block-gap.md) — (해결) commit/deploy 스캔에 scan_path_skip 경로 예외 추가 (tests/fixtures/ 등)
 - [novice-safety-minimalism](novice-safety-minimalism.md) — 사용자 확정: 안전 게이트는 deny-only 최소 코어, ask 티어 금지, 애매하면 CC 네이티브 위임
-- [npm-publish-flow](npm-publish-flow.md) — publish는 `.env`의 bypass-2FA granular 토큰을 `--userconfig`로. `npm login`은 그 토큰을 덮어써 E403을 부른다
+- [npm-publish-flow](npm-publish-flow.md) — 토큰은 `~/.npmrc`(`.env` 아님), 범위 넓어 새 패키지도 생성 가능. `npm login` 금지(E403). 샌드박스가 npmrc를 가려 ENEEDAUTH 오진을 부른다
 - [novice-capsule-injection-invariants](novice-capsule-injection-invariants.md) — capsule revision은 identity 집합 해시, 상한 초과 시 산문부터 폐기(지시 목록 불가침), 다이얼별 네임스페이스·tombstone
 - [novice-output-style-prohibition-guard](novice-output-style-prohibition-guard.md) — output style 미사용은 PRD 확정(설계안 C 기각). 가드가 `.md` 포함 전 트리에서 문자열 0건 강제 — 문서에 써도 깨진다
 
